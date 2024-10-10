@@ -1,0 +1,184 @@
+#include "Vue.h"
+
+Vue::Vue(int width, int height, int numPoints, int numImages, int signalsBufferSize) {
+    this->width = width;
+    this->height = height;
+    this->numPoints = numPoints;
+    this->numImages = numImages;
+    this->signalsBufferSize = signalsBufferSize;
+
+    std::vector<float> data = read_binary_file("data.bin");
+    binaryData = reshape_data(data, 4);
+}
+
+int Vue::getNumImages() {
+    return numImages;
+}
+
+void Vue::generatePoints() {
+    std::lock_guard<std::mutex> lock(signalsMutex);
+    std::lock_guard<std::mutex> lock2(lastSignalMutex);
+
+    signals.clear();
+    for (int i = 0; i < numImages; i++) {
+        std::vector<float> signal = ::generatePoints(numPoints, width);
+        signals.push_back(signal);
+        lastSignal.push_back(signal.back());
+    }
+}
+
+void Vue::generateNextPoint() {
+    std::lock_guard<std::mutex> lock(signalsMutex);
+    std::lock_guard<std::mutex> lock2(lastSignalMutex);
+
+    for (int i = 0; i < numImages; i++) {
+        if (i == 0){
+            int idx = (int) t % (int)(binaryData[0].size()/10);
+            signals[i].push_back(binaryData[0][idx*10] * 1000);
+
+        }
+        else if (i % 2 == 0){
+            signals[i].push_back(::generateSinusoidalPoint(t + i * 10, (float)(4096 - i*50) ));
+        } else {
+            signals[i].push_back(generateSquareWavePoint(t + i * 10, (float)(4096 - i*50) ));
+        }
+        while (signals[i].size() > signalsBufferSize) {
+            signals[i].erase(signals[i].begin());
+        }
+        lastSignal[i] = signals[i].back();
+    }
+
+    t++;
+
+
+}
+
+cv::Mat Vue::plotGrid() {
+    std::lock_guard<std::mutex> lock(signalsMutex);
+    std::vector<cv::Mat> images;
+
+    uint8_t blue = 255;
+    uint8_t green = 0;
+
+    for (uint8_t i = 0; i < numImages; i++) {
+        std::vector<float> clipped_signal = ::selectEnd(signals[i], numPoints);
+        std::vector<Point> points = ::floatsToPoints(clipped_signal, width, height);
+        // check in all set if i in it (not optimal)
+        if (!selectedSignalsIndexes.empty() and selectedSignalsIndexes[selectedWindow].contains(i)) {
+            images.push_back(::plotPoints(points, width, height, false, {255 - blue, green, blue}, {25, 25, 25}));
+        } else {
+            images.push_back(::plotPoints(points, width, height, false, {255 - blue, green, blue}));
+        }
+        blue -= std::floor(255.0f / numImages);
+    }
+
+    return ::concatenateImages(images);
+}
+
+std::vector<cv::Mat> Vue::plotSelectedSignal() {
+    std::lock_guard<std::mutex> lock(signalsMutex);
+
+    std::vector<cv::Mat> images;
+
+    int nearSqrt = std::ceil(std::sqrt(numImages));
+
+    int selectedWidth = width * nearSqrt;
+    int selectedHeight = height * 2;
+
+    for (int k = 0; k < selectedSignalsIndexes.size(); k++) {
+
+        cv::Mat selectedImage(selectedHeight, selectedWidth, CV_8UC3, cv::Scalar(0, 0, 0));
+
+        int minValue = INFINITY;//(int)std::min_element(clipped_signal.begin(), clipped_signal.end())[0];
+        int maxValue = -INFINITY;//(int)std::max_element(clipped_signal.begin(), clipped_signal.end())[0];
+
+        // Float to points
+        std::vector<std::vector<float>> selectedSignals;
+        for (int selectSignalIndex: selectedSignalsIndexes[k]) {
+            std::vector<float> clipped_signal = ::selectEnd(signals[selectSignalIndex], numPoints * nearSqrt);
+            selectedSignals.push_back(clipped_signal);
+
+            int minLocal = std::min(minValue, (int) *std::min_element(clipped_signal.begin(), clipped_signal.end()));
+            if (minLocal < minValue) {
+                minValue = minLocal;
+            }
+            int maxLocal = std::max(maxValue, (int) *std::max_element(clipped_signal.begin(), clipped_signal.end()));
+            if (maxLocal > maxValue) {
+                maxValue = maxLocal;
+            }
+
+        }
+        std::vector<std::vector<Point>> vecPoints = ::vecFloatsToVecPoints(selectedSignals, selectedWidth, selectedHeight);
+
+        int idx = 0;
+        // Draw multiple signals
+        for (int selectSignalIndex: selectedSignalsIndexes[k]) {
+
+            int blue = 255 - (int) (std::floor(255.0f / (float) numImages) * (float) selectSignalIndex);
+
+            selectedImage = ::plotPoints(vecPoints[idx], selectedWidth, selectedHeight, false, {255 - blue, 0, blue}, {0, 0, 0},
+                                         true, selectedImage);
+            idx++;
+
+        }
+
+        Color labelColor = {255, 0, 0};
+        double fontScale = 0.3;
+        // Add extremum values on the Y-axis
+        std::string minLabel = std::to_string(minValue);
+        std::string maxLabel = std::to_string(maxValue);
+
+        // Draw the labels
+        drawLabel(selectedImage, minLabel, Point(int(selectedWidth / 2 + 5), selectedHeight - 5), labelColor,
+                  fontScale);
+        drawLabel(selectedImage, maxLabel, Point(int(selectedWidth / 2 + 5), 10), labelColor, fontScale);
+
+        std::string signalsIndexesString;
+        for (int selectedSignalIndex: selectedSignalsIndexes[k]) {
+            signalsIndexesString += std::to_string(selectedSignalIndex) + " ";
+        }
+
+        drawLabel(selectedImage, "Signal " + signalsIndexesString, Point(5, 10), labelColor, fontScale);
+
+        cv::copyMakeBorder(selectedImage, selectedImage, 5, 5, 0, 0, cv::BORDER_CONSTANT, cv::Scalar(0, 0, 0));
+
+        images.push_back(selectedImage);
+    }
+    return images;
+}
+
+void Vue::setSelectedWindow(int index) {
+    selectedWindow = index;
+}
+
+void Vue::addWindow(){
+    selectedSignalsIndexes.push_back({0});
+    // print all selectedSignalsIndexes
+    for (int i = 0; i < selectedSignalsIndexes.size(); i++) {
+        std::cout << "Window " << i << ": ";
+        for (int j: selectedSignalsIndexes[i]) {
+            std::cout << j << " ";
+        }
+        std::cout << std::endl;
+    }
+}
+
+cv::Mat Vue::plotHeatmap(int caseSize) {
+    std::lock_guard<std::mutex> lock(lastSignalMutex);
+    return ::generateHeatmap(lastSignal, caseSize, -4096, 4096);
+}
+
+void Vue::selectSignal(int index) {
+    if (selectedSignalsIndexes.empty()) {
+        return;
+    } else
+    if (selectedSignalsIndexes[selectedWindow].contains(index)) {
+        selectedSignalsIndexes[selectedWindow].erase(index);
+    } else {
+        selectedSignalsIndexes[selectedWindow].insert(index);
+    }
+}
+
+std::vector<std::set<int>> Vue::getSelectedSignalIndex() {
+    return selectedSignalsIndexes;
+}
