@@ -23,7 +23,11 @@ add_executable(MEAc__ src/main.cpp
         src/Data.cpp
         src/Data.h
         src/PythonAPI.cpp
-        src/PythonAPI.h)
+        src/PythonAPI.h
+        src/config.h
+        src/Network.cpp
+        src/Network.h
+        src/VecFloat.h)
 
 # Link OpenCV libraries
 target_link_libraries(MEAc__ PRIVATE ${OpenCV_LIBS})

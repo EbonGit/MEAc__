@@ -3,8 +3,14 @@
 
 #include "utils.h"
 
+enum class SignalType {
+    RAW,
+    ABSOLUTE,
+};
+
 class Data {
 protected :
+
     std::vector<std::vector<float>> signals;
     std::mutex signalsMutex;
     std::vector<float> lastSignal;
@@ -12,6 +18,7 @@ protected :
 
     std::vector<std::set<int>> selectedSignalsIndexes = {};
     int selectedWindow = 0;
+    std::set<int> thresholdedSignalsIndexes = {};
 
     long t = 0;
 

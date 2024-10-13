@@ -1,8 +1,9 @@
 #include <chrono>
 #include "MEA.h"
 #include <thread>
+#include "config.h"
 
-MEA_Params params(64, 64, 32, 64, 512);
+MEA_Params params(width, height, numPoints, numImages, signalsBufferSize);
 
 MEA_Info meaInfo(params);
 
@@ -55,7 +56,7 @@ int main() {
         cv::Mat heatmap = meaInfo.mea.plotHeatmap(32);
 
         if (numberOfWindows > 0){
-            std::vector<cv::Mat> selectedImage = meaInfo.mea.plotSelectedSignal();
+            std::vector<cv::Mat> selectedImage = meaInfo.mea.plotSelectedSignal(2);
 
             for (int i = 0; i < numberOfWindows; i++) {
                 std::string windowName = "Window " + std::to_string(i);
@@ -75,7 +76,7 @@ int main() {
         float frames = 1.0f / elapsed.count();
         fps.addFrame(frames);
 
-        int key = cv::waitKey(20);
+        int key = cv::waitKeyEx(20);
 
         if (key == 'a') {
             numberOfWindows++;
@@ -90,6 +91,25 @@ int main() {
             meaInfo.mea.add_i();
             int sum = meaInfo.mea.print_selected_window();
             std::cout << "i + Selected window = " << sum << std::endl;
+        }
+
+        if(key == 't') {
+            meaInfo.mea.selectThresholdedSignal();
+        }
+
+        switch (key) {
+            case 2490368: // Up arrow
+                meaInfo.mea.setThreshold(meaInfo.mea.threshold + 1);
+                break;
+            case 2621440: // Down arrow
+                meaInfo.mea.setThreshold(meaInfo.mea.threshold - 1);
+                break;
+            case 2424832: // Left arrow
+                meaInfo.mea.setLag(meaInfo.mea.lag - 1);
+                break;
+            case 2555904: // Right arrow
+                meaInfo.mea.setLag(meaInfo.mea.lag + 1);
+                break;
         }
 
         if (key == 27) {

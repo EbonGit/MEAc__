@@ -1,3 +1,4 @@
+#include <numeric>
 #include "utils.h"
 
 std::vector<Point> floatsToPoints(std::vector<float> floats, int width, int height, float max, float min) {
@@ -181,6 +182,17 @@ float generateSquareWavePoint(long t, float amplitude) {
     return generateSinusoidalPoint(t, amplitude) > 0 ? amplitude : -amplitude;
 }
 
+float generateSpikePoint(long t, float amplitude) {
+    return (t % 100 == 0 or (t+1) % 100 == 0) ? amplitude : 0;
+}
+
+float addNoise(float value, float noise) {
+    if (rand() % 2 == 0) {
+        return value - (rand() % 100) * noise;
+    }
+    return value + (rand() % 100) * noise;
+}
+
 std::vector<float> generatePoints(int numPoints, int width) {
     std::vector<float> points;
     int step = width / numPoints;
@@ -328,4 +340,46 @@ int getImageIndex(int x, int y, int numImages, int width, int height) {
     int yCoord = std::floor((float)y / (float)height);
 
     return yCoord * nearSqrt + xCoord;
+}
+
+double mean(const std::vector<float>& data, int start, int end) {
+    return std::accumulate(data.begin() + start, data.begin() + end, 0.0) / (end - start);
+}
+
+double stdDev(const std::vector<float>& data, int start, int end) {
+    double m = mean(data, start, end);
+    double sum = 0.0;
+    for (int i = start; i < end; ++i) {
+        sum += std::pow(data[i] - m, 2);
+    }
+    return std::sqrt(sum / (end - start));
+}
+
+ThresholdingResult thresholding_algo(const std::vector<float>& y, int lag, double threshold, double influence) {
+    int n = y.size();
+    ThresholdingResult result;
+    result.signals.resize(n, 0);
+    result.avgFilter.resize(n, 0.0);
+    result.stdFilter.resize(n, 0.0);
+
+    std::vector<float> filteredY = y;
+
+    // Initial mean and std deviation for the first lag elements
+    result.avgFilter[lag - 1] = mean(y, 0, lag);
+    result.stdFilter[lag - 1] = stdDev(y, 0, lag);
+
+    for (int i = lag; i < n; ++i) {
+        if (std::abs(y[i] - result.avgFilter[i - 1]) > threshold * result.stdFilter[i - 1]) {
+            result.signals[i] = (y[i] > result.avgFilter[i - 1]) ? 2000.0 : -2000.0;
+            filteredY[i] = influence * y[i] + (1 - influence) * filteredY[i - 1];
+        } else {
+            result.signals[i] = 0;
+            filteredY[i] = y[i];
+        }
+
+        result.avgFilter[i] = mean(filteredY, i - lag + 1, i + 1);
+        result.stdFilter[i] = stdDev(filteredY, i - lag + 1, i + 1);
+    }
+
+    return result;
 }

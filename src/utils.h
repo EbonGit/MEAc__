@@ -5,18 +5,13 @@
 #include <vector>
 #include <cstdlib>
 #include <string>
+#include "config.h"
 
 struct Point {
     Point(int i1, int i2);
 
     int x;
     int y;
-};
-
-struct Color {
-    int r;
-    int g;
-    int b;
 };
 
 struct MEA_Params {
@@ -62,13 +57,17 @@ void drawAxes(cv::Mat& image, Color axesColor = {100, 100, 100}, int height = 20
 
 void drawLabel(cv::Mat& image, const std::string& label, Point position, Color color = {255, 255, 255}, double scale = 0.5, int thickness = 1, bool isCentered = false);
 
-cv::Mat plotPoints(const std::vector<Point>& points, int width, int height, bool randomColor = true, Color color = {255, 255, 255}, Color bgColor = {0, 0, 0}, bool axes = false, cv::Mat baseImage = cv::Mat());
+cv::Mat plotPoints(const std::vector<Point>& points, int width, int height, bool randomColor = true, Color color = {255, 255, 255}, Color bgColor = bg, bool axes = false, cv::Mat baseImage = cv::Mat());
 
 float generatePoint(float lastPoint = -1);
 
 float generateSinusoidalPoint(long t, float amplitude = 4096.f);
 
 float generateSquareWavePoint(long t, float amplitude = 4096.f);
+
+float generateSpikePoint(long t, float amplitude = 4096.f);
+
+float addNoise(float value, float noiseLevel);
 
 std::vector<float> generatePoints(int numPoints, int width);
 
@@ -80,4 +79,23 @@ cv::Mat generateHeatmap(const std::vector<float>& data, int caseSize, float minV
 
 int getImageIndex(int x, int y, int numImages, int width, int height);
 
-#endif //MEAC___UTILS_H
+struct ThresholdingResult {
+    std::vector<float> signals;
+    std::vector<float> avgFilter;
+    std::vector<float> stdFilter;
+};
+
+ThresholdingResult thresholding_algo(const std::vector<float>& y, int lag, double threshold, double influence);
+
+template<typename T>
+T getIthElement(const std::set<T>& mySet, size_t index) {
+    if (index >= mySet.size()) {
+        throw std::out_of_range("Index is out of bounds");
+    }
+
+    auto it = mySet.begin();
+    std::advance(it, index); // Move the iterator to the i-th position
+    return *it;
+}
+
+#endif //MEAC___UTILS_H`

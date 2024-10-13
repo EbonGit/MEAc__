@@ -4,8 +4,9 @@
 #include <mutex>
 #include "Vue.h"
 #include "PythonAPI.h"
+#include "Network.h"
 
-class MEA : public Vue, public PythonAPI {
+class MEA : public Vue, public PythonAPI, public Network {
 private :
 public :
     MEA(MEA_Params params);
