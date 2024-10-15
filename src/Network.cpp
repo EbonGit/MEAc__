@@ -27,25 +27,22 @@ void Network::generateNextPoint() {
         if (i == 0){
             int idx = (int) t % (int)(binaryData[0].size()/10);
             float x = binaryData[0][idx*10] * 1000;
-            signals[i].push_back(signalProcessing(x));
+            signals[i].push(signalProcessing(x));
 
         }
         else if (i % 10 == 0){
             float x = ::generateSpikePoint(t + i * 10, (float)(4096 - i*50)/10 );
             x = addNoise(x, 1);
-            signals[i].push_back(signalProcessing(x));
+            signals[i].push(signalProcessing(x));
         }
         else if (i % 2 == 0){
             float x = ::generateSinusoidalPoint(t + i * 10, (float)(4096 - i*50) );
-            signals[i].push_back(signalProcessing(x));
+            signals[i].push(signalProcessing(x));
         } else {
             float x = ::generateSquareWavePoint(t + i * 10, (float)(4096 - i*50) );
-            signals[i].push_back(signalProcessing(x));
+            signals[i].push(signalProcessing(x));
         }
-        while (signals[i].size() > signalsBufferSize) {
-            signals[i].erase(signals[i].begin());
-        }
-        lastSignal[i] = signals[i].back();
+        lastSignal[i] = signals[i].peek();
     }
 
     t++;

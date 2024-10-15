@@ -6,6 +6,7 @@
 #include <cstdlib>
 #include <string>
 #include "config.h"
+#include "stack.h"
 
 struct Point {
     Point(int i1, int i2);
@@ -47,8 +48,6 @@ std::vector<Point> floatsToPoints(std::vector<float> floats, int width, int heig
 
 std::vector<std::vector<Point>> vecFloatsToVecPoints(std::vector<std::vector<float>> floats, int width, int height);
 
-std::vector<float> selectEnd(std::vector<float> floats, int nbPoints);
-
 void setPixel(cv::Mat& image, int x, int y, const Color& color);
 
 void drawLine(cv::Mat& image, Point p1, Point p2, Color color = {255, 255, 255}, int offsetX = 0, int offsetY = 0);
@@ -69,7 +68,7 @@ float generateSpikePoint(long t, float amplitude = 4096.f);
 
 float addNoise(float value, float noiseLevel);
 
-std::vector<float> generatePoints(int numPoints, int width);
+Stack<float> generatePoints(int numPoints, int width);
 
 cv::Mat concatenateImages(std::vector<cv::Mat> images);
 

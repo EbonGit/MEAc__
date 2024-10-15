@@ -5,7 +5,7 @@
 #include <cstring>
 #include <stdexcept>
 
-std::vector<float> Data::getSignals(int index) {
+Stack<float> Data::getSignals(int index) {
     std::lock_guard<std::mutex> lock(signalsMutex);
     return signals[index];
 }

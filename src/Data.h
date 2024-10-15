@@ -2,6 +2,7 @@
 #define MEAC___DATA_H
 
 #include "utils.h"
+#include "stack.h"
 
 enum class SignalType {
     RAW,
@@ -11,7 +12,7 @@ enum class SignalType {
 class Data {
 protected :
 
-    std::vector<std::vector<float>> signals;
+    std::vector<Stack<float>> signals;
     std::mutex signalsMutex;
     std::vector<float> lastSignal;
     std::mutex lastSignalMutex;
@@ -23,7 +24,7 @@ protected :
     long t = 0;
 
 public :
-    std::vector<float> getSignals(int index);
+    Stack<float> getSignals(int index);
 };
 
 std::vector<float> read_binary_file(const std::string& file_path);

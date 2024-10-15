@@ -46,11 +46,6 @@ std::vector<std::vector<Point>> vecFloatsToVecPoints(std::vector<std::vector<flo
     return points;
 }
 
-std::vector<float> selectEnd(std::vector<float> floats, int nbPoints) {
-    int count = std::min(static_cast<int>(floats.size()), nbPoints);
-    return std::vector<float>(floats.end() - count, floats.end());
-}
-
 // Helper function to set pixel color in the OpenCV Mat (optimized)
 void setPixel(cv::Mat& image, int x, int y, const Color& color) {
     if (x >= 0 && x < image.cols && y >= 0 && y < image.rows) {
@@ -193,12 +188,12 @@ float addNoise(float value, float noise) {
     return value + (rand() % 100) * noise;
 }
 
-std::vector<float> generatePoints(int numPoints, int width) {
-    std::vector<float> points;
+Stack<float> generatePoints(int numPoints, int width) {
+    Stack<float> points = Stack<float>(signalsBufferSize);
     int step = width / numPoints;
     for (int i = 0; i < numPoints; i++) {
         float random = generatePoint();
-        points.push_back(random);
+        points.push(random);
     }
     return points;
 }

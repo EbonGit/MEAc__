@@ -27,7 +27,8 @@ add_executable(MEAc__ src/main.cpp
         src/config.h
         src/Network.cpp
         src/Network.h
-        src/VecFloat.h)
+        src/VecFloat.h
+        src/stack.h)
 
 # Link OpenCV libraries
 target_link_libraries(MEAc__ PRIVATE ${OpenCV_LIBS})

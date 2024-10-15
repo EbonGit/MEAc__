@@ -15,11 +15,10 @@ void Vue::generatePoints() {
     std::lock_guard<std::mutex> lock(signalsMutex);
     std::lock_guard<std::mutex> lock2(lastSignalMutex);
 
-    signals.clear();
     for (int i = 0; i < numImages; i++) {
-        std::vector<float> signal = ::generatePoints(numPoints, width);
+        Stack<float> signal = ::generatePoints(numPoints, width);
         signals.push_back(signal);
-        lastSignal.push_back(signal.back());
+        lastSignal.push_back(signal.peek());
     }
 }
 
@@ -31,7 +30,7 @@ cv::Mat Vue::plotGrid() {
     uint8_t green = 0;
 
     for (uint8_t i = 0; i < numImages; i++) {
-        std::vector<float> clipped_signal = ::selectEnd(signals[i], numPoints);
+        std::vector<float> clipped_signal = signals[i].get_last_n(numPoints);
         std::vector<Point> points = ::floatsToPoints(clipped_signal, width, height);
         // check in all set if i in it (not optimal)
         if (!selectedSignalsIndexes.empty() and selectedSignalsIndexes[selectedWindow].contains(i)) {
@@ -65,7 +64,7 @@ std::vector<cv::Mat> Vue::plotSelectedSignal(int scale) {
         // Float to points
         std::vector<std::vector<float>> selectedSignals;
         for (int selectSignalIndex: selectedSignalsIndexes[k]) {
-            std::vector<float> clipped_signal = ::selectEnd(signals[selectSignalIndex], numPoints * nearSqrt * scale);
+            std::vector<float> clipped_signal = signals[selectSignalIndex].get_last_n(numPoints * nearSqrt * scale);
             selectedSignals.push_back(clipped_signal);
 
             int minLocal = std::min(minValue, (int) *std::min_element(clipped_signal.begin(), clipped_signal.end()));
