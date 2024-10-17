@@ -8,8 +8,8 @@
 #pragma comment(lib, "ws2_32.lib") // Link the Winsock library
 
 constexpr int PORT = 8080;  // Port to use
-constexpr int P = 10;       // Number of points per signal
-constexpr int N = 4;        // Number of signals to generate
+constexpr int P = 4;       // Number of points per signal
+constexpr int N = 64;        // Number of signals to generate
 
 extern __int64 t;
 

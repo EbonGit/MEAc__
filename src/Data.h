@@ -6,7 +6,7 @@
 
 enum class SignalType {
     RAW,
-    ABSOLUTE,
+    ABS,
 };
 
 class Data {

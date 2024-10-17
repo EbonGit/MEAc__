@@ -57,24 +57,45 @@ void TCPServer::start() {
         }
 
         std::cout << "Connection established. Sending data..." << std::endl;
+
         // Send data to the client at regular intervals
         while (true) {
-            this->send_data(client_sock);
+            this->send_data(client_sock);  // Send the data to the client
 
-            // Check if the client has closed the connection
+            // Check if the client has closed the connection using select
+            fd_set readfds;
+            FD_ZERO(&readfds);
+            FD_SET(client_sock, &readfds);
+
+            timeval timeout = { 0, 0 };  // No timeout, just check if data is available
+
+            // Check if there is data available or if the connection is closed
+            int activity = select(0, &readfds, NULL, NULL, &timeout);
+            if (activity == SOCKET_ERROR) {
+                std::cerr << "Select failed" << std::endl;
+                break;  // Error in select, break out of the loop
+            }
+
+            if (activity == 0) {
+                // No data available, continue sending
+                Sleep(50);
+                continue;
+            }
+
+            // Try to receive a single byte to check if the client has closed the connection
             char buffer[1];
-            int recv_result = recv(client_sock, buffer, sizeof(buffer), 0);
-
+            int recv_result = recv(client_sock, buffer, sizeof(buffer), MSG_PEEK);
             if (recv_result == 0) {
+                // Client has closed the connection
                 std::cout << "Client disconnected" << std::endl;
                 break;  // Client has closed the connection, exit the inner loop
             }
             if (recv_result == SOCKET_ERROR) {
                 std::cerr << "Error receiving data from client" << std::endl;
-                break;  // Error occurred, exit the inner loop
+                break;  // Error receiving data, exit the inner loop
             }
 
-            Sleep(25); // Wait for 250 ms before sending new data
+            Sleep(50);
         }
 
         // Close the client socket when done
@@ -93,7 +114,7 @@ void TCPServer::send_data(SOCKET client_sock) {
 
     for (int i = 0; i < N; i++) {
         for (int j = 0; j < P; j++) {
-            signals[i][j] = generateSinusoidalPoint(((float)t*P + j)/10.f, 10*(double)i + 1);
+            signals[i][j] = generateSinusoidalPoint(((float)t*P + j), 10*(double)i + 1);
         }
     }
     t++;

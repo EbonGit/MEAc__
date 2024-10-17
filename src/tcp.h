@@ -8,11 +8,10 @@
 #pragma comment(lib, "ws2_32.lib")
 
 const int N = numImages;
-const int P = 10;
 
 class tcp: public virtual Data {
 public:
-    tcp(const std::string& ip, int port) : ip_(ip), port_(port), sockfd_(INVALID_SOCKET) {}
+    tcp(const std::string& ip, int port);
 
     bool connectSocket();
 

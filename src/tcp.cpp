@@ -1,5 +1,7 @@
 #include "tcp.h"
 
+tcp::tcp(const std::string& i, int p) : ip_(i), port_(p), sockfd_(INVALID_SOCKET) {}
+
 bool tcp::connectSocket() {
     WSADATA wsaData;
     int wsResult = WSAStartup(MAKEWORD(2, 2), &wsaData);  // Initialize Winsock
@@ -47,10 +49,10 @@ int receiveData(SOCKET sockfd, void* buffer, size_t totalBytes) {
 
 double convertBigEndianToDouble(const char* data) {
     uint64_t raw;
-    std::memcpy(&raw, data, sizeof(raw));  // Copy the raw bytes into a uint64_t
-    raw = _byteswap_uint64(raw);  // Swap bytes for big-endian to host byte order
+    std::memcpy(&raw, data, sizeof(raw));
+    raw = _byteswap_uint64(raw);
     double result;
-    std::memcpy(&result, &raw, sizeof(result));  // Convert the uint64_t to a double
+    std::memcpy(&result, &raw, sizeof(result));
     return result;
 }
 
@@ -70,37 +72,37 @@ int tcp::receive() {
 
         // Unpacking the first 4 bytes (big-endian integer)
         int decoded_int_x;
-        memcpy(&decoded_int_x, data.data(), sizeof(decoded_int_x));  // Copy the first 4 bytes into decoded_int_x
-        decoded_int_x = ntohl(decoded_int_x);  // Convert from network byte order to host byte order
-        std::cout << "Decoded int X: " << decoded_int_x << std::endl;
+        memcpy(&decoded_int_x, data.data(), sizeof(decoded_int_x));
+        decoded_int_x = ntohl(decoded_int_x);
 
         // Unpacking the next 4 bytes (big-endian integer)
         int decoded_int_y;
-        memcpy(&decoded_int_y, data.data() + 4, sizeof(decoded_int_y));  // Copy the next 4 bytes into decoded_int_y
-        decoded_int_y = ntohl(decoded_int_y);  // Convert from network byte order to host byte order
-        std::cout << "Decoded int Y: " << decoded_int_y << std::endl;
+        memcpy(&decoded_int_y, data.data() + 4, sizeof(decoded_int_y));
+        decoded_int_y = ntohl(decoded_int_y);
 
         std::vector<std::vector<double>> decoded_data(decoded_int_x, std::vector<double>(decoded_int_y));
 
         size_t offset = sizeof(decoded_int_x) + sizeof(decoded_int_y);  // Start after the two integers
 
-        // Loop over all interleaved signals (doubles)
         for (int i = 0; i < decoded_int_x; ++i) {
             for (int j = 0; j < decoded_int_y; ++j) {
-                // Convert the next 8 bytes (Big Endian) to a double
                 decoded_data[i][j] = convertBigEndianToDouble(data.data() + offset);
-                offset += sizeof(double);  // Move the offset by 8 bytes (size of a double)
+                offset += sizeof(double);
             }
         }
 
-        // Print the decoded data (for verification)
-        std::cout << "Decoded Data (N x P):" << std::endl;
+        std::unique_lock<std::mutex> lock(signalsMutex);
+        std::unique_lock<std::mutex> lock2(lastSignalMutex);
+
+        // push data on top of each stack
         for (int i = 0; i < decoded_int_x; ++i) {
             for (int j = 0; j < decoded_int_y; ++j) {
-                std::cout << decoded_data[i][j] << " ";
+                signals[i].push((float)decoded_data[i][j]);
             }
-            std::cout << std::endl;
+            lastSignal[i] = signals[i].peek();
         }
+        lock.unlock();
+        lock2.unlock();
     }
 
     return 0;
@@ -113,3 +115,4 @@ void tcp::closeSocket() {
     }
     WSACleanup();  // Clean up Winsock
 }
+

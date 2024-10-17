@@ -8,21 +8,6 @@ MEA_Params params(width, height, numPoints, numImages, signalsBufferSize);
 
 MEA_Info meaInfo(params);
 
-void refreshPoints(MEA& mea) {
-    while (1) {
-        mea.generateNextPoint();
-        std::this_thread::sleep_for(std::chrono::milliseconds(20));
-    }
-}
-
-void launchTCP() {
-    tcp t_(ip, port);
-    if (t_.connectSocket()){
-        t_.receive();
-        t_.closeSocket();
-    }
-}
-
 void mouseCallback(int event, int x, int y, int flags, void* userdata) {
     if (event == cv::EVENT_LBUTTONDOWN) {
         //MEA_Params params = static_cast<MEA_Info*>(userdata)->params;
@@ -52,10 +37,6 @@ int main() {
     int numberOfWindows = 0;
 
     cv::setMouseCallback("MEA", mouseCallback, nullptr);
-
-    std::thread t(refreshPoints, std::ref(meaInfo.mea));
-
-    std::thread tcpThread(launchTCP);
 
     auto previousTime = std::chrono::high_resolution_clock::now();
 
@@ -133,7 +114,5 @@ int main() {
     }
 
     cv::destroyAllWindows();
-    t.detach();
-    tcpThread.detach();
     return 0;
 }

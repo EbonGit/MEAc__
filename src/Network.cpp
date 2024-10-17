@@ -1,18 +1,24 @@
 #include "Network.h"
-#include <utility>
 
-Network::Network(std::string IP, int port, SignalType signalType) : IP(std::move(IP)), port(port), signalType(signalType) {
-    std::cout << "Network instance created with IP: " << this->IP << " and port: " << this->port << std::endl;
+Network::Network(SignalType signalType) : tcp(IP, PORT), signalType(signalType) {
 
     std::vector<float> data = read_binary_file("data.bin");
     binaryData = reshape_data(data, 4);
+
+    if (mode == Mode::GENERATE) {
+        std::thread generateThread(&Network::launchGenerate, this);
+        generateThread.detach();
+    } else if (mode == Mode::TCP) {
+        std::thread tcpThread(&Network::launchTCP, this);
+        tcpThread.detach();
+    }
 }
 
 float Network::signalProcessing(float x) {
     switch (signalType) {
         case SignalType::RAW:
             return x;
-        case SignalType::ABSOLUTE:
+        case SignalType::ABS:
             return std::abs(x);
         default:
             return x;
@@ -47,4 +53,18 @@ void Network::generateNextPoint() {
 
     t++;
 
+}
+
+void Network::launchGenerate() {
+    while (true) {
+        generateNextPoint();
+        std::this_thread::sleep_for(std::chrono::milliseconds(25));
+    }
+}
+
+void Network::launchTCP() {
+    if (connectSocket()) {
+        receive();
+        closeSocket();
+    }
 }
