@@ -2,6 +2,7 @@
 #include "MEA.h"
 #include <thread>
 #include "config.h"
+#include "tcp.h"
 
 MEA_Params params(width, height, numPoints, numImages, signalsBufferSize);
 
@@ -11,6 +12,14 @@ void refreshPoints(MEA& mea) {
     while (1) {
         mea.generateNextPoint();
         std::this_thread::sleep_for(std::chrono::milliseconds(20));
+    }
+}
+
+void launchTCP() {
+    tcp t_(ip, port);
+    if (t_.connectSocket()){
+        t_.receive();
+        t_.closeSocket();
     }
 }
 
@@ -45,6 +54,8 @@ int main() {
     cv::setMouseCallback("MEA", mouseCallback, nullptr);
 
     std::thread t(refreshPoints, std::ref(meaInfo.mea));
+
+    std::thread tcpThread(launchTCP);
 
     auto previousTime = std::chrono::high_resolution_clock::now();
 
@@ -123,5 +134,6 @@ int main() {
 
     cv::destroyAllWindows();
     t.detach();
+    tcpThread.detach();
     return 0;
 }

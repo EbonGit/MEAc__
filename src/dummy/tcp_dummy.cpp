@@ -93,7 +93,7 @@ void TCPServer::send_data(SOCKET client_sock) {
 
     for (int i = 0; i < N; i++) {
         for (int j = 0; j < P; j++) {
-            signals[i][j] = generateSinusoidalPoint(((float)t*P + j)/10.f, std::pow(2, i));
+            signals[i][j] = generateSinusoidalPoint(((float)t*P + j)/10.f, 10*(double)i + 1);
         }
     }
     t++;
