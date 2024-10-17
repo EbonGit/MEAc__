@@ -37,3 +37,7 @@ target_link_libraries(MEAc__ PRIVATE pybind11::embed Python3::Python)
 add_custom_command(TARGET MEAc__ POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy
         $<TARGET_FILE:MEAc__> ${CMAKE_CURRENT_BINARY_DIR}/../build)
+
+add_executable(TCPConsole src/dummy/tcp_dummy.h
+                    src/dummy/tcp_dummy.cpp
+                    src/dummy/main.cpp)
