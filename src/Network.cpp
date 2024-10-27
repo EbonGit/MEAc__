@@ -51,6 +51,10 @@ void Network::generateNextPoint() {
         lastSignal[i] = signals[i].peek();
     }
 
+    if (saving) {
+        write_single_point("save/data.bin", lastSignal);
+    }
+
     t++;
 
 }

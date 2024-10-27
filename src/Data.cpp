@@ -51,3 +51,17 @@ std::vector<std::vector<float>> reshape_data(const std::vector<float>& data, siz
 
     return reshaped_data;
 }
+
+void write_single_point(const std::string& file_path, const std::vector<float>& new_points) {
+    std::ofstream file(file_path, std::ios::binary | std::ios::app);
+
+    if (!file.is_open()) {
+        throw std::runtime_error("Could not open the file!");
+    }
+
+    // Write each new point to the binary file
+    for (float point : new_points) {
+        file.write(reinterpret_cast<const char*>(&point), sizeof(float));
+    }
+}
+

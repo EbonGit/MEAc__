@@ -12,7 +12,9 @@ enum class Mode {
     TCP
 };
 
-const Mode mode = Mode::TCP;
+const Mode mode = Mode::GENERATE;
+
+const bool saving = false;
 
 const Color bg = {0, 0, 0};
 

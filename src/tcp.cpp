@@ -101,6 +101,22 @@ int tcp::receive() {
             }
             lastSignal[i] = signals[i].peek();
         }
+
+        if (saving) {
+            std::vector<std::vector<float>> saving_data;
+            for (int i = 0; i < decoded_int_x; ++i) {
+                saving_data.push_back(signals[i].get_last_n(P));
+            }
+
+            for (int i = 0; i < P; ++i) {
+                std::vector<float> new_points;
+                for (int j = 0; j < decoded_int_x; ++j) {
+                    new_points.push_back(saving_data[j][i]);
+                }
+                write_single_point("save/data.bin", new_points);
+            }
+        }
+
         lock.unlock();
         lock2.unlock();
     }
