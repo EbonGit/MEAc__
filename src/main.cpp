@@ -13,7 +13,7 @@ void mouseCallback(int event, int x, int y, int flags, void* userdata) {
         //MEA_Params params = static_cast<MEA_Info*>(userdata)->params;
         // Left button click
         std::cout << "Mouse click at: (" << x << ", " << y << ")" << std::endl;
-        int indexImage = ::getImageIndex(x, y, params.numImages, params.width, params.height);
+        int indexImage = ::getImageIndex(x, y, params.numImages, params.width, params.height, meaInfo.mea.pinout);
         std::cout << "Selected signal: " << indexImage << std::endl;
         meaInfo.mea.selectSignal(indexImage);
     }

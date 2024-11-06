@@ -2,6 +2,7 @@
 #define MEAC___VUE_H
 #include "Data.h"
 #include "config.h"
+#include <fstream>
 
 class Vue: public virtual Data {
 protected:
@@ -11,8 +12,12 @@ protected:
     int numImages;
     int signalsBufferSize;
 
+    void readPinout();
+
 public :
     Vue(int width, int height, int numPoints, int numImages, int signalsBufferSize);
+
+    std::vector<int> pinout;
 
     void generatePoints();
 

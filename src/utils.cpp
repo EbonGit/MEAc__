@@ -198,7 +198,7 @@ Stack<float> generatePoints(int numPoints, int width) {
     return points;
 }
 
-cv::Mat concatenateImages(std::vector<cv::Mat> images) {
+cv::Mat concatenateImages(std::vector<cv::Mat> images, std::vector<int>& pinout) {
     int n = images.size();
     int sqrt = std::ceil(std::sqrt(n));
     int missingImages = sqrt * sqrt - n;
@@ -216,7 +216,8 @@ cv::Mat concatenateImages(std::vector<cv::Mat> images) {
         for (int i = range.start; i < range.end; ++i) {
             for (int j = 0; j < sqrt; ++j) {
                 cv::Mat roi = concatenatedImage(cv::Rect(j * imgWidth, i * imgHeight, imgWidth, imgHeight));
-                images[i * sqrt + j].copyTo(roi);
+                int idx = pinout[i * sqrt + j];
+                images[idx].copyTo(roi);
             }
         }
     });
@@ -247,7 +248,7 @@ cv::Vec3b valueToColor(float value, float min, float max) {
     return cv::Vec3b(blue, 0, red);
 }
 
-cv::Mat generateHeatmap(const std::vector<float>& data, int caseSize, float minValue, float maxValue, bool showLabels) {
+cv::Mat generateHeatmap(const std::vector<float>& data, int caseSize, float minValue, float maxValue, std::vector<int>& pinout, bool showLabels) {
     int n = std::ceil(std::sqrt(data.size()));  // Get the size of the square matrix (n x n
     int width = n * caseSize;
     int height = n * caseSize;
@@ -265,7 +266,8 @@ cv::Mat generateHeatmap(const std::vector<float>& data, int caseSize, float minV
     for (int i = 0; i < n; ++i) {
         for (int j = 0; j < n; ++j) {
             // Get the value corresponding to the current cell
-            float value = dataCopy[i * n + j];
+            int idx = pinout[i * n + j];
+            float value = dataCopy[idx];
 
             // Get color based on value
             cv::Scalar color = valueToColor(value, minValue, maxValue);
@@ -322,7 +324,7 @@ int FPS::getFPS() {
     return static_cast<int>(somme / (float)frames.size());
 }
 
-int getImageIndex(int x, int y, int numImages, int width, int height) {
+int getImageIndex(int x, int y, int numImages, int width, int height, std::vector<int>& pinout) {
     int nearSqrt = std::ceil(std::sqrt(numImages));
     int totalWidth = width * nearSqrt;
     int totalHeight = height * nearSqrt;
@@ -334,7 +336,7 @@ int getImageIndex(int x, int y, int numImages, int width, int height) {
     int xCoord = std::floor((float)x / (float)width);
     int yCoord = std::floor((float)y / (float)height);
 
-    return yCoord * nearSqrt + xCoord;
+    return pinout[yCoord * nearSqrt + xCoord];
 }
 
 double mean(const std::vector<float>& data, int start, int end) {

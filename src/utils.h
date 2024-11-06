@@ -70,13 +70,13 @@ float addNoise(float value, float noiseLevel);
 
 Stack<float> generatePoints(int numPoints, int width);
 
-cv::Mat concatenateImages(std::vector<cv::Mat> images);
+cv::Mat concatenateImages(std::vector<cv::Mat> images, std::vector<int>& pinout);
 
 cv::Vec3b valueToColor(float value, float min, float max);
 
-cv::Mat generateHeatmap(const std::vector<float>& data, int caseSize, float minValue, float maxValue, bool showLabels = true);
+cv::Mat generateHeatmap(const std::vector<float>& data, int caseSize, float minValue, float maxValue, std::vector<int>& pinout, bool showLabels = true);
 
-int getImageIndex(int x, int y, int numImages, int width, int height);
+int getImageIndex(int x, int y, int numImages, int width, int height, std::vector<int>& pinout);
 
 struct ThresholdingResult {
     std::vector<float> signals;

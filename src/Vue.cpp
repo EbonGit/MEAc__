@@ -8,6 +8,7 @@ Vue::Vue(int width, int height, int numPoints, int numImages, int signalsBufferS
     this->numImages = numImages;
     this->signalsBufferSize = signalsBufferSize;
 
+    readPinout();
 }
 
 
@@ -19,6 +20,36 @@ void Vue::generatePoints() {
         Stack<float> signal = ::generatePoints(numPoints, width);
         signals.push_back(signal);
         lastSignal.push_back(signal.peek());
+    }
+}
+
+void Vue::readPinout() {
+    std::ifstream file("pinout.csv");
+    std::vector<int> temp;
+    std::string line;
+
+    if (!file.is_open()) {
+        std::cerr << "Could not open the file!" << std::endl;
+    }
+
+    while (std::getline(file, line)) {
+        try {
+            temp.push_back(std::stoi(line));
+        } catch (const std::invalid_argument& e) {
+            std::cerr << "Invalid data: " << line << " is not an integer." << std::endl;
+        }
+    }
+
+    file.close();
+
+    pinout.clear();
+
+    for (int i = 0; i < numImages; i++) {
+        if(i < temp.size()) {
+            pinout.push_back(temp[i]);
+        } else {
+            pinout.push_back(0);
+        }
     }
 }
 
@@ -41,7 +72,7 @@ cv::Mat Vue::plotGrid() {
         blue -= std::floor(255.0f / numImages);
     }
 
-    return ::concatenateImages(images);
+    return ::concatenateImages(images, pinout);
 }
 
 std::vector<cv::Mat> Vue::plotSelectedSignal(int scale) {
@@ -137,7 +168,7 @@ std::vector<cv::Mat> Vue::plotSelectedSignal(int scale) {
 
         std::string signalsIndexesString;
         for (int selectedSignalIndex: selectedSignalsIndexes[k]) {
-            signalsIndexesString += std::to_string(selectedSignalIndex) + " ";
+            signalsIndexesString += std::to_string(pinout[selectedSignalIndex]) + " ";
         }
 
         drawLabel(selectedImage, "Signal " + signalsIndexesString, Point(5, 10), labelColor, fontScale);
@@ -175,7 +206,7 @@ void Vue::addWindow(){
 
 cv::Mat Vue::plotHeatmap(int caseSize) {
     std::lock_guard<std::mutex> lock(lastSignalMutex);
-    return ::generateHeatmap(lastSignal, caseSize, -4096, 4096);
+    return ::generateHeatmap(lastSignal, caseSize, -4096, 4096, pinout);
 }
 
 void Vue::selectSignal(int index) {
