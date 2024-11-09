@@ -2,7 +2,6 @@
 #define MEAC___DATA_H
 
 #include "utils.h"
-#include "stack.h"
 
 enum class SignalType {
     RAW,
@@ -12,7 +11,7 @@ enum class SignalType {
 class Data {
 protected :
 
-    std::vector<Stack<float>> signals;
+    std::vector<StackSignal> signals;
     std::mutex signalsMutex;
     std::vector<float> lastSignal;
     std::mutex lastSignalMutex;

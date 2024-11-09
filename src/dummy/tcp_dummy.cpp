@@ -108,13 +108,24 @@ float generateSinusoidalPoint(float t, float amplitude) {
     return (std::sin(t / 10.f)) * amplitude;
 }
 
+float generateRandomSpikePoint(float t, float amplitude) {
+    if (rand() % 1000 < 2) {
+        return amplitude * (rand() % 100) / 100.f;
+    }
+    return 0;
+}
+
 void TCPServer::send_data(SOCKET client_sock) {
     // Generate the 4 signals, each with P points
     std::vector<std::vector<double>> signals(N, std::vector<double>(P));
 
     for (int i = 0; i < N; i++) {
         for (int j = 0; j < P; j++) {
-            signals[i][j] = generateSinusoidalPoint(((float)t*P + j), 10*(double)i + 1);
+            if (i % 2 == 0) {
+                signals[i][j] = generateSinusoidalPoint(((float)t*P + j), 10*(double)i + 1);
+            } else {
+                signals[i][j] = generateRandomSpikePoint(((float) t * P + j), 10 * (double) i + 1);
+            }
         }
     }
     t++;

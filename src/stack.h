@@ -7,7 +7,7 @@
 
 template <typename T>
 class Stack {
-private:
+protected:
     std::vector<T> items;
     int max_size;
 
@@ -20,7 +20,7 @@ public:
         return items.empty();
     }
 
-    // Push an item to the stack
+    virtual // Push an item to the stack
     void push(const T& item) {
         if (max_size != -1 && items.size() >= max_size) {
             // If the max size is reached, remove the oldest item (front)

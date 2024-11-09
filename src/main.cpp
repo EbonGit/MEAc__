@@ -14,6 +14,9 @@ void mouseCallback(int event, int x, int y, int flags, void* userdata) {
         // Left button click
         std::cout << "Mouse click at: (" << x << ", " << y << ")" << std::endl;
         int indexImage = ::getImageIndex(x, y, params.numImages, params.width, params.height, meaInfo.mea.pinout);
+        if (indexImage < 0) {
+            return;
+        }
         std::cout << "Selected signal: " << indexImage << std::endl;
         meaInfo.mea.selectSignal(indexImage);
     }
@@ -91,16 +94,16 @@ int main() {
 
         switch (key) {
             case 2490368: // Up arrow
-                meaInfo.mea.setThreshold(meaInfo.mea.threshold + 1);
+                meaInfo.mea.addThreshold(0.25);
                 break;
             case 2621440: // Down arrow
-                meaInfo.mea.setThreshold(meaInfo.mea.threshold - 1);
+                meaInfo.mea.addThreshold(-0.25);
                 break;
             case 2424832: // Left arrow
-                meaInfo.mea.setLag(meaInfo.mea.lag - 1);
+                meaInfo.mea.addLag(-1);
                 break;
             case 2555904: // Right arrow
-                meaInfo.mea.setLag(meaInfo.mea.lag + 1);
+                meaInfo.mea.addLag(1);
                 break;
         }
 

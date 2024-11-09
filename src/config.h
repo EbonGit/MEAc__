@@ -12,7 +12,7 @@ enum class Mode {
     TCP
 };
 
-const Mode mode = Mode::GENERATE;
+const Mode mode = Mode::TCP;
 
 const bool saving = false;
 

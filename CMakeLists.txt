@@ -30,7 +30,9 @@ add_executable(MEAc__ src/main.cpp
         src/VecFloat.h
         src/stack.h
         src/tcp.cpp
-        src/tcp.h)
+        src/tcp.h
+        src/StackSignal.cpp
+        src/StackSignal.h)
 
 # Link OpenCV libraries
 target_link_libraries(MEAc__ PRIVATE ${OpenCV_LIBS})

@@ -6,7 +6,7 @@
 #include <cstdlib>
 #include <string>
 #include "config.h"
-#include "stack.h"
+#include "StackSignal.h"
 
 struct Point {
     Point(int i1, int i2);
@@ -68,7 +68,7 @@ float generateSpikePoint(long t, float amplitude = 4096.f);
 
 float addNoise(float value, float noiseLevel);
 
-Stack<float> generatePoints(int numPoints, int width);
+StackSignal generatePoints(int numPoints, int width);
 
 cv::Mat concatenateImages(std::vector<cv::Mat> images, std::vector<int>& pinout);
 
@@ -77,12 +77,6 @@ cv::Vec3b valueToColor(float value, float min, float max);
 cv::Mat generateHeatmap(const std::vector<float>& data, int caseSize, float minValue, float maxValue, std::vector<int>& pinout, bool showLabels = true);
 
 int getImageIndex(int x, int y, int numImages, int width, int height, std::vector<int>& pinout);
-
-struct ThresholdingResult {
-    std::vector<float> signals;
-    std::vector<float> avgFilter;
-    std::vector<float> stdFilter;
-};
 
 ThresholdingResult thresholding_algo(const std::vector<float>& y, int lag, double threshold, double influence);
 

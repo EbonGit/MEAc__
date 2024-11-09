@@ -11,13 +11,12 @@ Vue::Vue(int width, int height, int numPoints, int numImages, int signalsBufferS
     readPinout();
 }
 
-
 void Vue::generatePoints() {
     std::lock_guard<std::mutex> lock(signalsMutex);
     std::lock_guard<std::mutex> lock2(lastSignalMutex);
 
     for (int i = 0; i < numImages; i++) {
-        Stack<float> signal = ::generatePoints(numPoints, width);
+        StackSignal signal = ::generatePoints(numPoints, width);
         signals.push_back(signal);
         lastSignal.push_back(signal.peek());
     }
@@ -48,7 +47,7 @@ void Vue::readPinout() {
         if(i < temp.size()) {
             pinout.push_back(temp[i]);
         } else {
-            pinout.push_back(0);
+            pinout.push_back(-1);
         }
     }
 }
@@ -121,7 +120,8 @@ std::vector<cv::Mat> Vue::plotSelectedSignal(int scale) {
 
             // Draw the thresholding line
             if (thresholdedSignalsIndexes.contains(k)){
-                ThresholdingResult result = ::thresholding_algo(selectedSignals[idx], this->lag, this->threshold, 0.0);
+                ThresholdingResult result = signals[selectSignalIndex].get_threshold();
+
 
                 std::vector<Point> avgPoints = ::floatsToPoints(result.avgFilter, selectedWidth, selectedHeight, maxValue, minValue);
 
@@ -168,7 +168,7 @@ std::vector<cv::Mat> Vue::plotSelectedSignal(int scale) {
 
         std::string signalsIndexesString;
         for (int selectedSignalIndex: selectedSignalsIndexes[k]) {
-            signalsIndexesString += std::to_string(pinout[selectedSignalIndex]) + " ";
+            signalsIndexesString += std::to_string(selectedSignalIndex) + " ";
         }
 
         drawLabel(selectedImage, "Signal " + signalsIndexesString, Point(5, 10), labelColor, fontScale);
@@ -193,7 +193,7 @@ void Vue::selectThresholdedSignal() {
 }
 
 void Vue::addWindow(){
-    selectedSignalsIndexes.push_back({0});
+    selectedSignalsIndexes.push_back({});
     // print all selectedSignalsIndexes
     for (int i = 0; i < selectedSignalsIndexes.size(); i++) {
         std::cout << "Window " << i << ": ";
@@ -222,4 +222,18 @@ void Vue::selectSignal(int index) {
 
 std::vector<std::set<int>> Vue::getSelectedSignalIndex() {
     return selectedSignalsIndexes;
+}
+
+void Vue::addLag(int delta) {
+    lag += delta;
+    for (int i = 0; i < numImages; i++) {
+        signals[i].addLag(delta);
+    }
+}
+
+void Vue::addThreshold(double delta) {
+    threshold += delta;
+    for (int i = 0; i < numImages; i++) {
+        signals[i].addThreshold(delta);
+    }
 }

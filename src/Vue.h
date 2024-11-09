@@ -32,12 +32,14 @@ public :
     void selectSignal(int index);
 
     void selectThresholdedSignal();
-    int lag = 25;
-    void setLag(int l) { this->lag = l; };
-    int threshold = 4;
-    void setThreshold(int t) { this->threshold = t; };
 
     std::vector<std::set<int>> getSelectedSignalIndex();
+
+    void addLag(int delta);
+    void addThreshold(double delta);
+
+    int lag = 25;
+    double threshold = 3.0;
 };
 
 

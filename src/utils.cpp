@@ -1,4 +1,3 @@
-#include <numeric>
 #include "utils.h"
 
 std::vector<Point> floatsToPoints(std::vector<float> floats, int width, int height, float max, float min) {
@@ -188,8 +187,8 @@ float addNoise(float value, float noise) {
     return value + (rand() % 100) * noise;
 }
 
-Stack<float> generatePoints(int numPoints, int width) {
-    Stack<float> points = Stack<float>(signalsBufferSize);
+StackSignal generatePoints(int numPoints, int width) {
+    StackSignal points = StackSignal(signalsBufferSize);
     int step = width / numPoints;
     for (int i = 0; i < numPoints; i++) {
         float random = generatePoint();
@@ -210,6 +209,8 @@ cv::Mat concatenateImages(std::vector<cv::Mat> images, std::vector<int>& pinout)
     int imgWidth = images[0].cols;
     int imgHeight = images[0].rows;
 
+    cv::Mat blankImage = cv::Mat::zeros(imgHeight, imgWidth, images[0].type());
+
     cv::Mat concatenatedImage(imgHeight * sqrt, imgWidth * sqrt, images[0].type());
 
     cv::parallel_for_(cv::Range(0, sqrt), [&](const cv::Range& range) {
@@ -217,6 +218,10 @@ cv::Mat concatenateImages(std::vector<cv::Mat> images, std::vector<int>& pinout)
             for (int j = 0; j < sqrt; ++j) {
                 cv::Mat roi = concatenatedImage(cv::Rect(j * imgWidth, i * imgHeight, imgWidth, imgHeight));
                 int idx = pinout[i * sqrt + j];
+                if (idx < 0) {
+                    blankImage.copyTo(roi);
+                    continue;
+                }
                 images[idx].copyTo(roi);
             }
         }
@@ -265,8 +270,15 @@ cv::Mat generateHeatmap(const std::vector<float>& data, int caseSize, float minV
 
     for (int i = 0; i < n; ++i) {
         for (int j = 0; j < n; ++j) {
+            int index = i * n + j;
             // Get the value corresponding to the current cell
             int idx = pinout[i * n + j];
+
+            if (idx < 0) {
+                drawLabel(heatmap, "N/A", Point(j * caseSize + caseSizeHalf, i * caseSize + caseSizeHalf), {255, 255, 255}, fontSize, 1, true);
+                continue;
+            }
+
             float value = dataCopy[idx];
 
             // Get color based on value
@@ -277,7 +289,6 @@ cv::Mat generateHeatmap(const std::vector<float>& data, int caseSize, float minV
                           cv::Point(j * caseSize, i * caseSize),
                           cv::Point((j + 1) * caseSize, (i + 1) * caseSize),
                           color, cv::FILLED);
-            int index = i * n + j;
             drawLabel(heatmap, std::to_string((int)index), Point(j * caseSize + caseSizeHalf, i * caseSize + caseSizeHalf), {255, 255, 255}, fontSize, 1, true);
         }
     }
@@ -335,7 +346,6 @@ int getImageIndex(int x, int y, int numImages, int width, int height, std::vecto
 
     int xCoord = std::floor((float)x / (float)width);
     int yCoord = std::floor((float)y / (float)height);
-
     return pinout[yCoord * nearSqrt + xCoord];
 }
 
