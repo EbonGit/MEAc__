@@ -7,8 +7,6 @@ Vue::Vue(int width, int height, int numPoints, int numImages, int signalsBufferS
     this->numPoints = numPoints;
     this->numImages = numImages;
     this->signalsBufferSize = signalsBufferSize;
-
-    readPinout();
 }
 
 void Vue::generatePoints() {
@@ -19,36 +17,6 @@ void Vue::generatePoints() {
         StackSignal signal = ::generatePoints(numPoints, width);
         signals.push_back(signal);
         lastSignal.push_back(signal.peek());
-    }
-}
-
-void Vue::readPinout() {
-    std::ifstream file("pinout.csv");
-    std::vector<int> temp;
-    std::string line;
-
-    if (!file.is_open()) {
-        std::cerr << "Could not open the file!" << std::endl;
-    }
-
-    while (std::getline(file, line)) {
-        try {
-            temp.push_back(std::stoi(line));
-        } catch (const std::invalid_argument& e) {
-            std::cerr << "Invalid data: " << line << " is not an integer." << std::endl;
-        }
-    }
-
-    file.close();
-
-    pinout.clear();
-
-    for (int i = 0; i < numImages; i++) {
-        if(i < temp.size()) {
-            pinout.push_back(temp[i]);
-        } else {
-            pinout.push_back(-1);
-        }
     }
 }
 
@@ -83,6 +51,7 @@ std::vector<cv::Mat> Vue::plotSelectedSignal(int scale) {
 
     int selectedWidth = width * nearSqrt * scale;
     int selectedHeight = height * 2 * scale;
+    int last_n = numPoints * nearSqrt * scale;
 
     for (int k = 0; k < selectedSignalsIndexes.size(); k++) {
 
@@ -94,7 +63,7 @@ std::vector<cv::Mat> Vue::plotSelectedSignal(int scale) {
         // Float to points
         std::vector<std::vector<float>> selectedSignals;
         for (int selectSignalIndex: selectedSignalsIndexes[k]) {
-            std::vector<float> clipped_signal = signals[selectSignalIndex].get_last_n(numPoints * nearSqrt * scale);
+            std::vector<float> clipped_signal = signals[selectSignalIndex].get_last_n(last_n);
             selectedSignals.push_back(clipped_signal);
 
             int minLocal = std::min(minValue, (int) *std::min_element(clipped_signal.begin(), clipped_signal.end()));
@@ -122,12 +91,15 @@ std::vector<cv::Mat> Vue::plotSelectedSignal(int scale) {
             if (thresholdedSignalsIndexes.contains(k)){
                 ThresholdingResult result = signals[selectSignalIndex].get_threshold();
 
+                std::vector<float> clipped_signals = ::get_last_n(result.signals, last_n);
+                std::vector<float> clipped_avg = ::get_last_n(result.avgFilter, last_n);
+                std::vector<float> clipped_std = ::get_last_n(result.stdFilter, last_n);
 
-                std::vector<Point> avgPoints = ::floatsToPoints(result.avgFilter, selectedWidth, selectedHeight, maxValue, minValue);
+                std::vector<Point> avgPoints = ::floatsToPoints(clipped_avg, selectedWidth, selectedHeight, maxValue, minValue);
 
-                VecFloat avgMinusStd = VecFloat(result.avgFilter) - VecFloat(result.stdFilter);
+                VecFloat avgMinusStd = VecFloat(clipped_avg) - VecFloat(clipped_std);
 
-                VecFloat avgPlusStd = VecFloat(result.avgFilter) + VecFloat(result.stdFilter);
+                VecFloat avgPlusStd = VecFloat(clipped_avg) + VecFloat(clipped_std);
 
                 // AVG
                 selectedImage = ::plotPoints(avgPoints, selectedWidth, selectedHeight,false,
@@ -142,7 +114,7 @@ std::vector<cv::Mat> Vue::plotSelectedSignal(int scale) {
                                              selectedWidth, selectedHeight, false,
                                              {0, 255, 0}, bg, true, selectedImage);
 
-                std::vector<Point> thresholdedPoints = ::floatsToPoints(result.signals, selectedWidth, selectedHeight, maxValue, minValue);
+                std::vector<Point> thresholdedPoints = ::floatsToPoints(clipped_signals, selectedWidth, selectedHeight, maxValue, minValue);
 
                 selectedImage = ::plotPoints(thresholdedPoints, selectedWidth, selectedHeight, false,
                                              {255, 0, 0}, bg, true, selectedImage);
@@ -206,7 +178,7 @@ void Vue::addWindow(){
 
 cv::Mat Vue::plotHeatmap(int caseSize) {
     std::lock_guard<std::mutex> lock(lastSignalMutex);
-    return ::generateHeatmap(lastSignal, caseSize, -4096, 4096, pinout);
+    return ::generateHeatmap(lastSignal, caseSize, minValueHeatmap, maxValueHeatmap, pinout);
 }
 
 void Vue::selectSignal(int index) {

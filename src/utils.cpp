@@ -189,10 +189,12 @@ float addNoise(float value, float noise) {
 
 StackSignal generatePoints(int numPoints, int width) {
     StackSignal points = StackSignal(signalsBufferSize);
-    int step = width / numPoints;
     for (int i = 0; i < numPoints; i++) {
-        float random = generatePoint();
-        points.push(random);
+        if (init_zero) {
+            points.push(0);
+        } else {
+            points.push(generatePoint());
+        }
     }
     return points;
 }

@@ -12,11 +12,18 @@ PythonAPI::PythonAPI() {
 
         instance = API();
 
+        api_thread = std::thread(&PythonAPI::start, this);
+        api_thread.detach();
 
     } catch (py::error_already_set& e) {
         std::cerr << "Python error: " << e.what() << std::endl;
     }
 
+}
+
+PythonAPI::~PythonAPI() {
+    py::finalize_interpreter();
+    api_thread.join();
 }
 
 void PythonAPI::add_i() {
@@ -34,4 +41,32 @@ int PythonAPI::print_selected_window() {
     } catch (py::error_already_set& e) {
         std::cerr << "Python error: " << e.what() << std::endl;
     }
+    return -1;
 }
+
+void PythonAPI::start() {
+    int iterations = 0;
+    while (true) {
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+        try {
+            if (python){
+                for (Zone z : zones) {
+                    float mean_zone = 0;
+                    for (int i = 0; i < z.indexes.size(); i++) {
+                        ThresholdingResult stack_zones = signals[z.indexes[i]].get_threshold();
+                        mean_zone += stack_zones.spikes;
+                    }
+                    mean_zone /= z.indexes.size();
+                    py::dict py_zone = py::dict();
+                    py_zone["name"] = z.name;
+                    py_zone["mean"] = mean_zone;
+                    instance.attr("set_object")(py_zone);
+                }
+                std::cout << "iteration: " << iterations++ << std::endl;
+            }
+        } catch (py::error_already_set& e) {
+            std::cerr << "Python error: " << e.what() << std::endl;
+        }
+    }
+}
+

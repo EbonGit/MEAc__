@@ -65,3 +65,58 @@ void write_single_point(const std::string& file_path, const std::vector<float>& 
     }
 }
 
+void Data::readPinout() {
+    std::ifstream file("pinout.csv");
+    std::vector<int> temp;
+    std::string line;
+
+    if (!file.is_open()) {
+        std::cerr << "Could not open the file!" << std::endl;
+    }
+
+    while (std::getline(file, line)) {
+        try {
+            temp.push_back(std::stoi(line));
+        } catch (const std::invalid_argument& e) {
+            std::cerr << "Invalid data: " << line << " is not an integer." << std::endl;
+        }
+    }
+
+    file.close();
+
+    pinout.clear();
+
+    float nearSqrt = std::ceil(std::sqrt(numImages));
+
+    for (int i = 0; i < nearSqrt*nearSqrt; i++) {
+        if(i < temp.size()) {
+            pinout.push_back(temp[i]);
+        } else {
+            pinout.push_back(-1);
+        }
+    }
+}
+
+void Data::readZones() {
+    std::ifstream file("zones.txt");
+    std::string line;
+
+    while (std::getline(file, line)) {
+        std::istringstream stream(line);
+        Zone entry;
+        stream >> entry.name;
+
+        int index;
+        while (stream >> index) {
+            entry.indexes.push_back(pinout[index]);
+        }
+
+        zones.push_back(entry);
+
+        std::cout << entry.name << ": ";
+        for (int i : entry.indexes) {
+            std::cout << i << " ";
+        }
+        std::cout << std::endl;
+    }
+}

@@ -6,6 +6,17 @@
 #include <stdexcept>
 
 template <typename T>
+std::vector<T> get_last_n(const std::vector<T>& vec, int n) {
+    if (n <= 0) {
+        throw std::invalid_argument("Number of elements must be positive");
+    }
+
+    int count = std::min(static_cast<int>(vec.size()), n);
+
+    return std::vector<T>(vec.end() - count, vec.end());
+}
+
+template <typename T>
 class Stack {
 protected:
     std::vector<T> items;
@@ -39,6 +50,19 @@ public:
         return item;
     }
 
+    T erase_begin() {
+        if (is_empty()) {
+            throw std::out_of_range("erase from an empty stack");
+        }
+        T item = items.front();
+        items.erase(items.begin());
+        return item;
+    }
+
+    void resize(int size, T value) {
+        items.resize(size, value);
+    }
+
     // Peek the top item without removing it
     T peek() const {
         if (is_empty()) {
@@ -68,15 +92,10 @@ public:
         return items[index];
     }
 
-    // Function to get the last n elements of the stack
-    std::vector<T> get_last_n(int n) const {
-        if (n <= 0) {
-            throw std::invalid_argument("Number of elements must be positive");
-        }
-        int count = std::min(static_cast<int>(this->items.size()), n);
-
-        return std::vector<T>(items.end() - count, items.end());
+    std::vector<T> get_last_n(int n) {
+        return ::get_last_n(items, n);
     }
+
 };
 
 #endif //MEAC___STACK_H

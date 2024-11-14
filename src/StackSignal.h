@@ -11,6 +11,8 @@ struct ThresholdingResult {
     std::vector<float> signals;
     std::vector<float> avgFilter;
     std::vector<float> stdFilter;
+
+    int spikes = 0;
 };
 
 struct RollingStats {

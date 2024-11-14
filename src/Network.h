@@ -2,8 +2,9 @@
 #define MEAC___NETWORK_H
 #include <string>
 #include "tcp.h"
+#include "PythonAPI.h"
 
-class Network: public virtual tcp {
+class Network: public virtual tcp, public PythonAPI {
 
 private:
     SignalType signalType;

@@ -44,4 +44,6 @@ add_custom_command(TARGET MEAc__ POST_BUILD
 
 add_executable(TCPConsole src/dummy/tcp_dummy.h
                     src/dummy/tcp_dummy.cpp
-                    src/dummy/main.cpp)
+                    src/dummy/main.cpp
+        src/dummy/SimpleNeuralNetwork.cpp
+        src/dummy/SimpleNeuralNetwork.h)

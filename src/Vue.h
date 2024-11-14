@@ -12,12 +12,8 @@ protected:
     int numImages;
     int signalsBufferSize;
 
-    void readPinout();
-
 public :
     Vue(int width, int height, int numPoints, int numImages, int signalsBufferSize);
-
-    std::vector<int> pinout;
 
     void generatePoints();
 

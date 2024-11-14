@@ -1,6 +1,6 @@
 #include "Network.h"
 
-Network::Network(SignalType signalType) : tcp(IP, PORT), signalType(signalType) {
+Network::Network(SignalType signalType) : tcp(IP, PORT), PythonAPI(), signalType(signalType) {
 
     std::vector<float> data = read_binary_file("data.bin");
     binaryData = reshape_data(data, 4);

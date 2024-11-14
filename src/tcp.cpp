@@ -26,7 +26,6 @@ bool tcp::connectSocket() {
         return false;
     }
 
-    std::cout << "Connected to the server." << std::endl;
     return true;
 }
 
@@ -80,6 +79,8 @@ int tcp::receive() {
         memcpy(&decoded_int_y, data.data() + 4, sizeof(decoded_int_y));
         decoded_int_y = ntohl(decoded_int_y);
 
+        t += decoded_int_y;
+
         std::vector<std::vector<double>> decoded_data(decoded_int_x, std::vector<double>(decoded_int_y));
 
         size_t offset = sizeof(decoded_int_x) + sizeof(decoded_int_y);  // Start after the two integers
@@ -129,6 +130,6 @@ void tcp::closeSocket() {
         closesocket(sockfd_);
         std::cout << "Connection closed." << std::endl;
     }
-    WSACleanup();  // Clean up Winsock
+    WSACleanup();
 }
 

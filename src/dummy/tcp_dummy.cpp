@@ -2,11 +2,25 @@
 
 __int64 t = 0;
 
-TCPServer::TCPServer() : sockfd(INVALID_SOCKET), client_sock(INVALID_SOCKET) {
+bool contains(const std::vector<int>& v, int x) {
+    return std::find(v.begin(), v.end(), x) != v.end();
+}
+
+TCPServer::TCPServer(int P, int N, Mode mode) : sockfd(INVALID_SOCKET), client_sock(INVALID_SOCKET) {
+    this->P = P;
+    this->N = N;
+    this->mode = mode;
     // Initialize Winsock
     if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
         std::cerr << "WSAStartup failed" << std::endl;
         throw std::runtime_error("WSAStartup failed");
+    }
+
+    if (mode == Mode::MEA) {
+        for (int i = 0; i < nn_index.size(); i++) {
+            nn.push_back(SimpleNeuralNetwork(2, 10, 1));
+        }
+        std::cout << "NN initialized" << std::endl;
     }
 }
 
@@ -32,7 +46,7 @@ void TCPServer::start() {
     sockaddr_in serv_addr;
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_port = htons(PORT);
-    serv_addr.sin_addr.s_addr = INADDR_ANY;  // Listen on any incoming address
+    serv_addr.sin_addr.s_addr = INADDR_ANY;
 
     // Bind the socket
     if (bind(sockfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) == SOCKET_ERROR) {
@@ -58,44 +72,45 @@ void TCPServer::start() {
 
         std::cout << "Connection established. Sending data..." << std::endl;
 
-        // Send data to the client at regular intervals
+        // Main loop for sending and receiving data
         while (true) {
-            this->send_data(client_sock);  // Send the data to the client
+            this->send_data(client_sock);  // Send data to the client
 
-            // Check if the client has closed the connection using select
+            // Check for incoming data using select
             fd_set readfds;
             FD_ZERO(&readfds);
             FD_SET(client_sock, &readfds);
 
-            timeval timeout = { 0, 0 };  // No timeout, just check if data is available
+            timeval timeout = { 0, 0 };  // No timeout, just an immediate check
 
             // Check if there is data available or if the connection is closed
             int activity = select(0, &readfds, NULL, NULL, &timeout);
             if (activity == SOCKET_ERROR) {
                 std::cerr << "Select failed" << std::endl;
-                break;  // Error in select, break out of the loop
+                break;
             }
 
-            if (activity == 0) {
-                // No data available, continue sending
-                Sleep(50);
-                continue;
+            if (activity > 0 && FD_ISSET(client_sock, &readfds)) {
+                char buffer[3] = {0};  // Buffer to store the 3 bytes
+                int recv_result = recv(client_sock, buffer, 3, 0);
+
+                if (recv_result == 0) {
+                    // Client has closed the connection
+                    std::cout << "Client disconnected" << std::endl;
+                    break;
+                }
+                if (recv_result == SOCKET_ERROR) {
+                    std::cerr << "Error receiving data from client" << std::endl;
+                    break;
+                }
+
+                // Process the 3-byte data if the mode is "MEA"
+                if (mode == Mode::MEA) {
+                    std::cout << "Received data: " << buffer << std::endl;
+                }
             }
 
-            // Try to receive a single byte to check if the client has closed the connection
-            char buffer[1];
-            int recv_result = recv(client_sock, buffer, sizeof(buffer), MSG_PEEK);
-            if (recv_result == 0) {
-                // Client has closed the connection
-                std::cout << "Client disconnected" << std::endl;
-                break;  // Client has closed the connection, exit the inner loop
-            }
-            if (recv_result == SOCKET_ERROR) {
-                std::cerr << "Error receiving data from client" << std::endl;
-                break;  // Error receiving data, exit the inner loop
-            }
-
-            Sleep(50);
+            Sleep(50);  // Pause to avoid CPU overload
         }
 
         // Close the client socket when done
@@ -104,31 +119,73 @@ void TCPServer::start() {
     }
 }
 
+
+
 float generateSinusoidalPoint(float t, float amplitude) {
     return (std::sin(t / 10.f)) * amplitude;
 }
 
 float generateRandomSpikePoint(float t, float amplitude) {
-    if (rand() % 1000 < 2) {
+    if (rand() % 1000 < 1) {
         return amplitude * (rand() % 100) / 100.f;
     }
-    return 0;
+    float noise = 0;
+    if (rand() % 2 == 0) {
+        noise = (rand() % 100) / 100.f;
+    } else {
+        noise = -(rand() % 100) / 100.f;
+    }
+    return noise;
 }
 
 void TCPServer::send_data(SOCKET client_sock) {
     // Generate the 4 signals, each with P points
     std::vector<std::vector<double>> signals(N, std::vector<double>(P));
 
+    int nn_temp_index = 0;
+
+    for (int i = 0; i < size_in; i++) {
+        io_in[i] = rand() % 2;
+    }
+
     for (int i = 0; i < N; i++) {
         for (int j = 0; j < P; j++) {
-            if (i % 2 == 0) {
+            switch (mode) {
+            case Mode::SINUS:
                 signals[i][j] = generateSinusoidalPoint(((float)t*P + j), 10*(double)i + 1);
-            } else {
+                break;
+            case Mode::SPIKE:
                 signals[i][j] = generateRandomSpikePoint(((float) t * P + j), 10 * (double) i + 1);
+                break;
+            case Mode::MEA:
+                if (contains(nn_index, i)) {
+                    signals[i][j] = nn[nn_temp_index].forward({ double(io_in[0]), double(io_in[1]) })[0] * 100;
+                    if (j == P - 1) {
+                        nn_temp_index++;
+                    }
+                } else if (contains(A_index, i)) {
+                    signals[i][j] = io_in[0] * 100;
+                } else if (contains(B_index, i)) {
+                    signals[i][j] = io_in[1] * 100;
+                }
+                else {
+                    signals[i][j] = 0;
+                }
             }
         }
     }
     t++;
+
+    // MAJ NN
+    for (int k = 0; k < nn_index.size(); k++) {
+        std::vector<double> input = {double(io_in[0]), double(io_in[1])};
+        std::vector<double> target = {double(io_in[0] xor io_in[1])};
+
+        int r = rand() % 100; // difference during training
+        for (int i = 0; i < r; i++) {
+            nn[k].train(input, target);
+        }
+    }
 
     std::vector<double> interleaved_signals(P * N);
 

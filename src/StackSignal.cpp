@@ -19,14 +19,21 @@ ThresholdingResult thresholding_algo_update(float newPoint, int lag, double thre
     float signal = 0.0;
     if (window.size() >= lag && std::abs(newPoint - currentMean) > threshold * currentStdDev) {
         signal = (newPoint > currentMean) ? 2000.0 : -2000.0;
-        newPoint = influence * newPoint + (1 - influence) * window.back();  // Apply influence if thresholded
     }
 
     // Update result object
     if (result.signals.size() >= signalsBufferSize) {
+        if (result.signals[0] != 0.0) {
+            result.spikes--;
+        }
+
         result.signals.erase(result.signals.begin());
         result.avgFilter.erase(result.avgFilter.begin());
         result.stdFilter.erase(result.stdFilter.begin());
+    }
+
+    if (signal != 0.0) {
+        result.spikes++;
     }
     result.signals.push_back(signal);
     result.avgFilter.push_back(currentMean);
