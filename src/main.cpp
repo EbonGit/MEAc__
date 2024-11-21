@@ -92,6 +92,10 @@ int main() {
             meaInfo.mea.selectThresholdedSignal();
         }
 
+        if(key == 'm'){
+            meaInfo.mea.nextWindowMode();
+        }
+
         switch (key) {
             case 2490368: // Up arrow
                 meaInfo.mea.addThreshold(0.25);

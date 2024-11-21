@@ -59,8 +59,8 @@ public:
         return threshold;
     }
 
-    int LAG = 25;
-    double THRESHOLD = 3.0;
+    int LAG = 512;
+    double THRESHOLD = 1.5;
     double INFLUENCE = 1;
 
     void addLag(int l) { LAG = LAG + l; }

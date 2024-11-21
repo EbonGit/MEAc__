@@ -8,7 +8,7 @@ Network::Network(SignalType signalType) : tcp(IP, PORT), PythonAPI(), signalType
     if (mode == Mode::GENERATE) {
         std::thread generateThread(&Network::launchGenerate, this);
         generateThread.detach();
-    } else if (mode == Mode::TCP) {
+    } else if (mode == Mode::TCP || mode == Mode::MEA) {
         std::thread tcpThread(&Network::launchTCP, this);
         tcpThread.detach();
     }
@@ -64,6 +64,82 @@ void Network::launchGenerate() {
         generateNextPoint();
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
+}
+
+int Network::receive() {
+    int totalBytes = 8 * N * P + 8;
+
+    while (true) {
+        // Buffer to store the received data
+        std::vector<char> data(totalBytes);
+        int bytes_received = receiveData(data.data(), totalBytes);
+        if (bytes_received <= 0) {
+            std::cerr << "Error receiving data!" << std::endl;
+            closeSocket();
+            WSACleanup();
+            return -1;
+        }
+
+        // Unpacking the first 4 bytes (big-endian integer)
+        int decoded_int_x;
+        memcpy(&decoded_int_x, data.data(), sizeof(decoded_int_x));
+        decoded_int_x = ntohl(decoded_int_x);
+
+        // Unpacking the next 4 bytes (big-endian integer)
+        int decoded_int_y;
+        memcpy(&decoded_int_y, data.data() + 4, sizeof(decoded_int_y));
+        decoded_int_y = ntohl(decoded_int_y);
+
+        t += decoded_int_y;
+
+        std::vector<std::vector<double>> decoded_data(decoded_int_x, std::vector<double>(decoded_int_y));
+
+        size_t offset = sizeof(decoded_int_x) + sizeof(decoded_int_y);  // Start after the two integers
+
+        for (int i = 0; i < decoded_int_x; ++i) {
+            for (int j = 0; j < decoded_int_y; ++j) {
+                decoded_data[i][j] = convertBigEndianToDouble(data.data() + offset);
+                offset += sizeof(double);
+            }
+        }
+
+        std::unique_lock<std::mutex> lock(signalsMutex);
+        std::unique_lock<std::mutex> lock2(lastSignalMutex);
+
+        // push data on top of each stack
+        for (int i = 0; i < decoded_int_x; ++i) {
+            for (int j = 0; j < decoded_int_y; ++j) {
+                signals[i].push((float)decoded_data[i][j]);
+            }
+            lastSignal[i] = signals[i].peek();
+        }
+
+        if (mode == Mode::MEA && !msg.isOpen) {
+            msg.isOpen = true;
+            char* buf = msg.buffer;
+            sendData(buf, 3);
+        }
+
+        if (saving) {
+            std::vector<std::vector<float>> saving_data;
+            for (int i = 0; i < decoded_int_x; ++i) {
+                saving_data.push_back(signals[i].get_last_n(P));
+            }
+
+            for (int i = 0; i < P; ++i) {
+                std::vector<float> new_points;
+                for (int j = 0; j < decoded_int_x; ++j) {
+                    new_points.push_back(saving_data[j][i]);
+                }
+                write_single_point("save/data.bin", new_points);
+            }
+        }
+
+        lock.unlock();
+        lock2.unlock();
+    }
+
+    return 0;
 }
 
 void Network::launchTCP() {

@@ -2,6 +2,7 @@
 #define MEAC___DATA_H
 
 #include "utils.h"
+#include "windowMode.h"
 
 enum class SignalType {
     RAW,
@@ -11,6 +12,11 @@ enum class SignalType {
 struct Zone {
     std::string name;
     std::vector<int> indexes;
+};
+
+struct message {
+    char buffer[3] = {'0', '0', '0'}; // {Noise, A, B}
+    bool isOpen = true;
 };
 
 
@@ -28,6 +34,7 @@ protected :
     std::vector<std::set<int>> selectedSignalsIndexes = {};
     int selectedWindow = 0;
     std::set<int> thresholdedSignalsIndexes = {};
+    std::vector<windowMode> windowsMode = {};
 
     long t = 0;
 
@@ -35,6 +42,8 @@ public :
     Stack<float> getSignals(int index);
     std::vector<int> pinout;
     std::vector<Zone> zones;
+
+    message msg;
 };
 
 std::vector<float> read_binary_file(const std::string& file_path);

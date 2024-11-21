@@ -57,25 +57,11 @@ std::vector<cv::Mat> Vue::plotSelectedSignal(int scale) {
 
         cv::Mat selectedImage(selectedHeight, selectedWidth, CV_8UC3, cv::Scalar(bg.r, bg.g, bg.b));
 
-        int minValue = INFINITY;//(int)std::min_element(clipped_signal.begin(), clipped_signal.end())[0];
-        int maxValue = -INFINITY;//(int)std::max_element(clipped_signal.begin(), clipped_signal.end())[0];
-
         // Float to points
-        std::vector<std::vector<float>> selectedSignals;
-        for (int selectSignalIndex: selectedSignalsIndexes[k]) {
-            std::vector<float> clipped_signal = signals[selectSignalIndex].get_last_n(last_n);
-            selectedSignals.push_back(clipped_signal);
+        std::vector<std::vector<float>> selectedSignals = windowsMode[k].process(signals, selectedSignalsIndexes[k], last_n);
+        int minValue = windowsMode[k].get_last_min();
+        int maxValue = windowsMode[k].get_last_max();
 
-            int minLocal = std::min(minValue, (int) *std::min_element(clipped_signal.begin(), clipped_signal.end()));
-            if (minLocal < minValue) {
-                minValue = minLocal;
-            }
-            int maxLocal = std::max(maxValue, (int) *std::max_element(clipped_signal.begin(), clipped_signal.end()));
-            if (maxLocal > maxValue) {
-                maxValue = maxLocal;
-            }
-
-        }
         std::vector<std::vector<Point>> vecPoints = ::vecFloatsToVecPoints(selectedSignals, selectedWidth, selectedHeight);
 
         int idx = 0;
@@ -145,6 +131,10 @@ std::vector<cv::Mat> Vue::plotSelectedSignal(int scale) {
 
         drawLabel(selectedImage, "Signal " + signalsIndexesString, Point(5, 10), labelColor, fontScale);
 
+        std::string windowMode = windowsMode[k].getModeName();
+
+        drawLabel(selectedImage, windowMode, Point(selectedWidth - 50, selectedHeight - 5), labelColor, fontScale);
+
         cv::copyMakeBorder(selectedImage, selectedImage, 5, 5, 0, 0, cv::BORDER_CONSTANT, cv::Scalar(bg.r, bg.g, bg.b));
 
         images.push_back(selectedImage);
@@ -166,6 +156,7 @@ void Vue::selectThresholdedSignal() {
 
 void Vue::addWindow(){
     selectedSignalsIndexes.push_back({});
+    windowsMode.push_back(windowMode());
     // print all selectedSignalsIndexes
     for (int i = 0; i < selectedSignalsIndexes.size(); i++) {
         std::cout << "Window " << i << ": ";

@@ -60,7 +60,15 @@ void PythonAPI::start() {
                     py::dict py_zone = py::dict();
                     py_zone["name"] = z.name;
                     py_zone["mean"] = mean_zone;
-                    instance.attr("set_object")(py_zone);
+
+                    py::bytes temp = instance.attr("set_object")(py_zone).cast<py::bytes>();
+                    std::string temp_str = temp;
+                    msg.buffer[0] = temp_str[0];
+                    msg.buffer[1] = temp_str[1];
+                    msg.buffer[2] = temp_str[2];
+                    std::cout << temp_str << std::endl;
+                    msg.isOpen = false;
+
                 }
                 std::cout << "iteration: " << iterations++ << std::endl;
             }

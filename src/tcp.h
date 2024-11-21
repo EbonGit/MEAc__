@@ -15,7 +15,8 @@ public:
 
     bool connectSocket();
 
-    int receive();
+    int receiveData(void* buffer, size_t totalBytes);
+    void sendData(void* buffer, size_t totalBytes);
 
     void closeSocket();
 

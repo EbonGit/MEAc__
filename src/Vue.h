@@ -34,8 +34,12 @@ public :
     void addLag(int delta);
     void addThreshold(double delta);
 
-    int lag = 25;
-    double threshold = 3.0;
+    void nextWindowMode() {
+        windowsMode[selectedWindow].nextMode();
+    }
+
+    int lag = 512;
+    double threshold = 1.5;
 };
 
 

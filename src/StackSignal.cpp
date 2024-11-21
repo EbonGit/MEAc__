@@ -22,11 +22,13 @@ ThresholdingResult thresholding_algo_update(float newPoint, int lag, double thre
     }
 
     // Update result object
-    if (result.signals.size() >= signalsBufferSize) {
-        if (result.signals[0] != 0.0) {
+    if (result.signals.size() >= sizeSpikesBuffer) {
+        int idx = result.signals.size() - sizeSpikesBuffer;
+        if (result.signals[idx] != 0.0) {
             result.spikes--;
         }
-
+    }
+    if (result.signals.size() >= signalsBufferSize) {
         result.signals.erase(result.signals.begin());
         result.avgFilter.erase(result.avgFilter.begin());
         result.stdFilter.erase(result.stdFilter.begin());

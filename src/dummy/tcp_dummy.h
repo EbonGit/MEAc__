@@ -15,6 +15,20 @@ const std::vector<int> A_index = {39, 40, 47, 48};
 const std::vector<int> B_index = {43, 44, 51, 52};
 const int size_in = 2;
 
+const std::vector<std::vector<double>> inputs_CST = {
+        {0, 0},
+        {0, 1},
+        {1, 0},
+        {1, 1}
+};
+
+const std::vector<std::vector<double>> outputs_CST = {
+        {0},
+        {1},
+        {1},
+        {0}
+};
+
 enum class Mode {
     SPIKE,
     SINUS,
@@ -41,6 +55,8 @@ private:
 
     std::vector<SimpleNeuralNetwork> nn;
     std::vector<int> io_in = {1, 1};
+    std::vector<int> io_in_previous = {1, 1};
+    int noise = 0;
 
     void send_data(SOCKET client_sock);
 };

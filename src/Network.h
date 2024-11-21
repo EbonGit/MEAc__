@@ -21,7 +21,11 @@ public:
     void launchGenerate();
     void launchTCP();
 
+    int receive();
+
 };
+
+double convertBigEndianToDouble(const char* buffer);
 
 
 #endif //MEAC___NETWORK_H

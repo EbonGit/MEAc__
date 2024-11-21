@@ -91,8 +91,12 @@ void TCPServer::start() {
             }
 
             if (activity > 0 && FD_ISSET(client_sock, &readfds)) {
-                char buffer[3] = {0};  // Buffer to store the 3 bytes
-                int recv_result = recv(client_sock, buffer, 3, 0);
+                char buffer[5] = {0};  // Buffer to store the 3 bytes
+                int len = 1;
+                if (mode == Mode::MEA) {
+                    len = 3;
+                }
+                int recv_result = recv(client_sock, buffer, len, 0);
 
                 if (recv_result == 0) {
                     // Client has closed the connection
@@ -107,6 +111,11 @@ void TCPServer::start() {
                 // Process the 3-byte data if the mode is "MEA"
                 if (mode == Mode::MEA) {
                     std::cout << "Received data: " << buffer << std::endl;
+                    noise = buffer[0] - '0';
+                    io_in_previous[0] = io_in[0];
+                    io_in_previous[1] = io_in[1];
+                    io_in[0] = buffer[1] - '0';
+                    io_in[1] = buffer[2] - '0';
                 }
             }
 
@@ -144,10 +153,6 @@ void TCPServer::send_data(SOCKET client_sock) {
 
     int nn_temp_index = 0;
 
-    for (int i = 0; i < size_in; i++) {
-        io_in[i] = rand() % 2;
-    }
-
     for (int i = 0; i < N; i++) {
         for (int j = 0; j < P; j++) {
             switch (mode) {
@@ -158,15 +163,22 @@ void TCPServer::send_data(SOCKET client_sock) {
                 signals[i][j] = generateRandomSpikePoint(((float) t * P + j), 10 * (double) i + 1);
                 break;
             case Mode::MEA:
-                if (contains(nn_index, i)) {
-                    signals[i][j] = nn[nn_temp_index].forward({ double(io_in[0]), double(io_in[1]) })[0] * 100;
+                if (contains(A_index, i)) {
+                    signals[i][j] = t % 2 ? 0 : io_in[0] * 100;
+                } else if (contains(B_index, i)) {
+                    signals[i][j] = t % 2 ? 0 : io_in[1] * 100;
+                }
+                else if (contains(nn_index, i)) {
+                    if (t % 2 == 1) {
+                        signals[i][j] = 0;
+                    }
+                    else {
+                        signals[i][j] = nn[nn_temp_index].forward({double(io_in[0]), double(io_in[1])})[0] * 100;
+                    }
+
                     if (j == P - 1) {
                         nn_temp_index++;
                     }
-                } else if (contains(A_index, i)) {
-                    signals[i][j] = io_in[0] * 100;
-                } else if (contains(B_index, i)) {
-                    signals[i][j] = io_in[1] * 100;
                 }
                 else {
                     signals[i][j] = 0;
@@ -177,13 +189,15 @@ void TCPServer::send_data(SOCKET client_sock) {
     t++;
 
     // MAJ NN
-    for (int k = 0; k < nn_index.size(); k++) {
-        std::vector<double> input = {double(io_in[0]), double(io_in[1])};
-        std::vector<double> target = {double(io_in[0] xor io_in[1])};
+    if (mode == Mode::MEA && noise) {
+        for (int k = 0; k < nn_index.size(); k++) {
+            std::vector<double> input = {double(io_in_previous[0]), double(io_in_previous[1])};
+            std::vector<double> output = {double(io_in_previous[0] ^ io_in_previous[1])};
 
-        int r = rand() % 100; // difference during training
-        for (int i = 0; i < r; i++) {
-            nn[k].train(input, target);
+            int r = rand() % 10; // difference during training
+            for (int i = 0; i < r; i++) {
+                nn[k].train(input, output);
+            }
         }
     }
 

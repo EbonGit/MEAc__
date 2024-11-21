@@ -9,14 +9,15 @@ struct Color {
 
 enum class Mode {
     GENERATE,
-    TCP
+    TCP,
+    MEA
 };
 
-const Mode mode = Mode::TCP;
+const Mode mode = Mode::MEA;
 
 const bool saving = false;
 
-const bool python = false;
+const bool python = true;
 
 const bool init_zero = true;
 
@@ -27,9 +28,13 @@ const int height = 64;
 const int numPoints = 32;
 const int numImages = 60;
 const int signalsBufferSize = 1024;
+const int sizeSpikesBuffer = 50;
 
 const int minValueHeatmap = -100;
 const int maxValueHeatmap = 100;
+
+const int threshold_floor = 10;
+const int threshold_ceil = 90;
 
 const std::string IP = "127.0.0.1";
 const int PORT = 8080;
