@@ -17,7 +17,7 @@ const Mode mode = Mode::MEA;
 
 const bool saving = false;
 
-const bool python = true;
+const bool python = (mode == Mode::TCP) ? true : false;
 
 const bool init_zero = true;
 
@@ -30,8 +30,8 @@ const int numImages = 60;
 const int signalsBufferSize = 1024;
 const int sizeSpikesBuffer = 50;
 
-const int minValueHeatmap = -100;
-const int maxValueHeatmap = 100;
+const int minValueHeatmap = (mode == Mode::MEA) ? -100 : -2000;
+const int maxValueHeatmap = (mode == Mode::MEA) ? 100 : 2000;
 
 const int threshold_floor = 10;
 const int threshold_ceil = 90;
@@ -39,6 +39,7 @@ const int threshold_ceil = 90;
 const std::string IP = "127.0.0.1";
 const int PORT = 8080;
 const int P = 4;
+const int N = 8;
 
 
 #endif //MEAC___CONFIG_H

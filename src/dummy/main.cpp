@@ -33,7 +33,8 @@ int main() {
     }
 
     try {
-        TCPServer server = TCPServer(4, 60, Mode(mode));
+        TCPServer server = TCPServer(p, n, Mode(mode));
+        std::cout << "Server started with P=" << p << ", N=" << n << ", mode=" << mode << std::endl;
         server.start();
     }
     catch (const std::exception& e) {

@@ -90,6 +90,14 @@ int Network::receive() {
         memcpy(&decoded_int_y, data.data() + 4, sizeof(decoded_int_y));
         decoded_int_y = ntohl(decoded_int_y);
 
+        if (decoded_int_x != N || decoded_int_y != P) {
+            std::cerr << "Error: received data does not match the expected dimensions!" << std::endl;
+            std::cout << "Expected: " << N << "x" << P << ", Received: " << decoded_int_x << "x" << decoded_int_y << std::endl;
+            closeSocket();
+            WSACleanup();
+            return -1;
+        }
+
         t += decoded_int_y;
 
         std::vector<std::vector<double>> decoded_data(decoded_int_x, std::vector<double>(decoded_int_y));
@@ -112,6 +120,14 @@ int Network::receive() {
                 signals[i].push((float)decoded_data[i][j]);
             }
             lastSignal[i] = signals[i].peek();
+        }
+
+        int delta = numImages - decoded_int_x;
+        for (int i = 0; i < delta; i++) {
+            for (int j = 0; j < decoded_int_y; ++j) {
+                signals[decoded_int_x + i].push(0.0);
+            }
+            lastSignal[decoded_int_x + i] = 0.0;
         }
 
         if (mode == Mode::MEA && !msg.isOpen) {

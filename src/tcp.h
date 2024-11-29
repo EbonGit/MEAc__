@@ -7,8 +7,6 @@
 
 #pragma comment(lib, "ws2_32.lib")
 
-const int N = numImages;
-
 class tcp: public virtual Data {
 public:
     tcp(const std::string& ip, int port);
