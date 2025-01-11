@@ -13,11 +13,11 @@ enum class Mode {
     MEA
 };
 
-const Mode mode = Mode::MEA;
+const Mode mode = Mode::GENERATE;
 
 const bool saving = false;
 
-const bool python = (mode == Mode::TCP) ? true : false;
+const bool python = (mode == Mode::MEA) ? true : false;
 
 const bool init_zero = true;
 
@@ -39,7 +39,7 @@ const int threshold_ceil = 90;
 const std::string IP = "127.0.0.1";
 const int PORT = 8080;
 const int P = 4;
-const int N = 8;
+const int N = 60;
 
 
 #endif //MEAC___CONFIG_H
