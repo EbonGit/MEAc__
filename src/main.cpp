@@ -111,6 +111,14 @@ int main() {
                 break;
         }
 
+        if (mode == Mode::TCP && key == 'b')
+        {
+            messageLabView msg = {{'2', '0'}};
+            char* buf = msg.buffer;
+            meaInfo.mea.sendData(buf, 2);
+            std::cout << buf << std::endl;
+        }
+
         if (key == 27) {
             break;
         }

@@ -19,6 +19,10 @@ struct message {
     bool isOpen = true;
 };
 
+struct messageLabView {
+    char buffer[2] = {'2', '0'}; // {freq, type}
+};
+
 
 class Data {
 protected :
