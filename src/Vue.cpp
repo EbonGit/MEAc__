@@ -59,8 +59,8 @@ std::vector<cv::Mat> Vue::plotSelectedSignal(int scale) {
 
         // Float to points
         std::vector<std::vector<float>> selectedSignals = windowsMode[k].process(signals, selectedSignalsIndexes[k], last_n);
-        int minValue = windowsMode[k].get_last_min();
-        int maxValue = windowsMode[k].get_last_max();
+        float minValue = windowsMode[k].get_last_min();
+        float maxValue = windowsMode[k].get_last_max();
 
         std::vector<std::vector<Point>> vecPoints = ::vecFloatsToVecPoints(selectedSignals, selectedWidth, selectedHeight);
 
@@ -120,7 +120,7 @@ std::vector<cv::Mat> Vue::plotSelectedSignal(int scale) {
         std::string maxLabel = std::to_string(maxValue);
 
         // Draw the labels
-        drawLabel(selectedImage, minLabel, Point(int(selectedWidth / 2 + 5), selectedHeight - 5), labelColor,
+        drawLabel(selectedImage, minLabel, Point((selectedWidth / 2 + 5), selectedHeight - 5), labelColor,
                   fontScale);
         drawLabel(selectedImage, maxLabel, Point(int(selectedWidth / 2 + 5), 10), labelColor, fontScale);
 

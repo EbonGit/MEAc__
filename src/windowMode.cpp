@@ -15,13 +15,13 @@ std::vector<std::vector<float>> windowMode::process(std::vector<StackSignal> &si
                 std::vector<float> clipped_signal = signals[selectSignalIndex].get_last_n(last_n);
                 selectedSignals.push_back(clipped_signal);
 
-                int minLocal = std::min(last_min,
-                                        (int) *std::min_element(clipped_signal.begin(), clipped_signal.end()));
+                float minLocal = std::min(last_min,
+                                        (float) *std::min_element(clipped_signal.begin(), clipped_signal.end()));
                 if (minLocal < last_min) {
                     last_min = minLocal;
                 }
-                int maxLocal = std::max(last_max,
-                                        (int) *std::max_element(clipped_signal.begin(), clipped_signal.end()));
+                float maxLocal = std::max(last_max,
+                                        (float) *std::max_element(clipped_signal.begin(), clipped_signal.end()));
                 if (maxLocal > last_max) {
                     last_max = maxLocal;
                 }
