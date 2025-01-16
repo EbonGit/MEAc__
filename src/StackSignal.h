@@ -58,11 +58,6 @@ public:
     }
 
     ThresholdingResult get_threshold() {
-        float sum = 0.0;
-        for (float signal : window) {
-            sum += signal;
-        }
-        std::cout << "Sum: " << sum / LAG << std::endl;
         return threshold;
     }
 
