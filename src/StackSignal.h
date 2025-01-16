@@ -20,10 +20,10 @@ struct RollingStats {
     double sumOfSquares = 0.0;
     int count = 0;
 
-    void update(double newPoint, double oldPoint = 0.0) {
+    void update(double newPoint, int LAG, double oldPoint = 0.0) {
         sum += newPoint - oldPoint;
         sumOfSquares += newPoint * newPoint - oldPoint * oldPoint;
-        count = std::min(count + 1, signalsBufferSize);
+        count = std::min(count + 1, LAG);
     }
 
     double mean() const {
@@ -32,8 +32,10 @@ struct RollingStats {
 
     double stdDev() const {
         if (count > 1) {
-            double meanSquare = sum * sum / count;
-            return std::sqrt((sumOfSquares - meanSquare) / (count - 1));
+            double meanSquare = sumOfSquares / count;
+            double squareMean = (sum / count) * (sum / count);
+            return std::sqrt((meanSquare - squareMean) * count / (count - 1));
+
         }
         return 0.0;
     }
@@ -56,6 +58,11 @@ public:
     }
 
     ThresholdingResult get_threshold() {
+        float sum = 0.0;
+        for (float signal : window) {
+            sum += signal;
+        }
+        std::cout << "Sum: " << sum / LAG << std::endl;
         return threshold;
     }
 

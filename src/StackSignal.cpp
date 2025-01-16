@@ -5,9 +5,10 @@ ThresholdingResult thresholding_algo_update(float newPoint, int lag, double thre
     if (window.size() >= lag) {
         float oldPoint = window.front();
         window.pop_front();
-        stats.update(newPoint, oldPoint);  // Update rolling stats by adding new point, removing old one
+        stats.update(newPoint, lag, oldPoint); // Update rolling stats by adding new point, removing old one
+
     } else {
-        stats.update(newPoint);  // Just add new point if window not full
+        stats.update(newPoint, lag);  // Just add new point if window not full
     }
     window.push_back(newPoint);  // Add the new point to the rolling window
 
