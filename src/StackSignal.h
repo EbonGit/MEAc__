@@ -61,7 +61,7 @@ public:
         return threshold;
     }
 
-    int LAG = 512;
+    int LAG = 256;
     double THRESHOLD = 1.5;
     double INFLUENCE = 1;
 

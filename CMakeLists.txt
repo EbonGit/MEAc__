@@ -12,6 +12,8 @@ add_subdirectory(pybind11)
 
 find_package(Python3 COMPONENTS Interpreter Development)
 
+set(SERIALIB_SRC "src/serialib/serialib.cpp")
+
 # Add the executable
 add_executable(MEAc__ src/main.cpp
         src/MEA.cpp
@@ -35,6 +37,9 @@ add_executable(MEAc__ src/main.cpp
         src/StackSignal.h
         src/windowMode.cpp
         src/windowMode.h
+        ${SERIALIB_SRC}
+        src/SerialReader.cpp
+        src/SerialReader.h
 )
 
 # Link OpenCV libraries

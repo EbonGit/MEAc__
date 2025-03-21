@@ -10,10 +10,11 @@ struct Color {
 enum class Mode {
     GENERATE,
     TCP,
-    MEA
+    MEA,
+    SERIAL
 };
 
-const Mode mode = Mode::TCP;
+const Mode mode = Mode::SERIAL;
 
 const bool saving = false;
 
@@ -25,19 +26,18 @@ const Color bg = {0, 0, 0};
 
 const int width = 64;
 const int height = 64;
-const int numPoints = 64;
+const int numPoints = 32;
 const int numImages = 60;
 const int signalsBufferSize = 4096;
 const int sizeSpikesBuffer = 50;
 
-const int minValueHeatmap = (mode == Mode::MEA) ? -100 : -2;
-const int maxValueHeatmap = (mode == Mode::MEA) ? 100 : 2;
+const int minValueHeatmap = (mode == Mode::MEA) ? -100 : -2000;
+const int maxValueHeatmap = (mode == Mode::MEA) ? 100 : 2000;
 
-const int threshold_floor = 10;
-const int threshold_ceil = 90;
-
-const std::string IP = "169.254.119.97";
-const int PORT = 6340;
+//const std::string IP = "169.254.119.97";
+const std::string IP = "127.0.0.1";
+//const int PORT = 6340;
+const int PORT = 8080;
 const int P = 10;
 const int N = 4;
 

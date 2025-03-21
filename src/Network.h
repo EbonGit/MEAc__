@@ -3,6 +3,7 @@
 #include <string>
 #include "tcp.h"
 #include "PythonAPI.h"
+#include "SerialReader.h"
 
 class Network: public virtual tcp, public PythonAPI {
 
@@ -20,6 +21,7 @@ public:
 
     void launchGenerate();
     void launchTCP();
+    void launchSerial();
 
     int receive();
 

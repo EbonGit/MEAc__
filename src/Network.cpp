@@ -11,6 +11,9 @@ Network::Network(SignalType signalType) : tcp(IP, PORT), PythonAPI(), signalType
     } else if (mode == Mode::TCP || mode == Mode::MEA) {
         std::thread tcpThread(&Network::launchTCP, this);
         tcpThread.detach();
+    } else if (mode == Mode::SERIAL) {
+        std::thread serialThread(&Network::launchSerial, this);
+        serialThread.detach();
     }
 }
 
@@ -163,4 +166,56 @@ void Network::launchTCP() {
         receive();
         closeSocket();
     }
+}
+
+void Network::launchSerial() {
+    std::string port = "\\\\.\\COM6";
+    SerialReader serialReader(port, 115200);
+
+    if (!serialReader.openPort()) {
+        std::cerr << "[ERROR] Impossible d'ouvrir le port serie !" << std::endl;
+        return;
+    }
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+    float data[60];
+    serialReader.initialize();
+
+    while (true) {
+        int err = serialReader.read(data, 60);
+        if (err == 0) {
+            std::cerr << "[ERROR] Probleme de lecture, tentative de reconnexion..." << std::endl;
+            serialReader.closePort();
+            std::this_thread::sleep_for(std::chrono::seconds(10));
+            if (!serialReader.openPort()) {
+                std::cerr << "[ERROR] Impossible de rouvrir le port serie. Arret du programme." << std::endl;
+                break;
+            }
+            serialReader.initialize();
+        }
+        else if (err == 1) {
+            std::unique_lock<std::mutex> lock(signalsMutex);
+            std::unique_lock<std::mutex> lock2(lastSignalMutex);
+
+            for (int i = 0; i < 60; i++) {
+                signals[i].push(data[i]);
+                lastSignal[i] = signals[i].peek();
+            }
+
+            int delta = numImages - 60;
+            for (int i = 0; i < delta; i++) {
+                signals[60 + i].push(0.0);
+                lastSignal[60 + i] = 0.0;
+            }
+
+            lock.unlock();
+            lock2.unlock();
+        }
+        else if (err == 2) {
+            continue;
+        }
+    }
+
+    serialReader.closePort();
 }

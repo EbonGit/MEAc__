@@ -38,7 +38,7 @@ public :
         windowsMode[selectedWindow].nextMode();
     }
 
-    int lag = 512;
+    int lag = 256;
     double threshold = 1.5;
 };
 
