@@ -6,6 +6,7 @@
 #include <set>
 #include "StackSignal.h"
 
+
 enum class processMode {
     NORMAL,
     XOR,

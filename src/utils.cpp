@@ -392,3 +392,24 @@ ThresholdingResult thresholding_algo(const std::vector<float>& y, int lag, doubl
 
     return result;
 }
+
+static std::unordered_set<std::string> modifiedWindows;
+
+void setWindowIcon(const std::string& windowName, const std::string& iconPath) {
+    // Vérifier si l'icône a déjà été changée
+    if (modifiedWindows.find(windowName) != modifiedWindows.end()) {
+        return;
+    }
+
+    // Trouver la fenêtre OpenCV
+    if (HWND hwnd = FindWindow(NULL, windowName.c_str())) {
+        auto hIcon = static_cast<HICON>(LoadImage(NULL, iconPath.c_str(), IMAGE_ICON, 32, 32, LR_LOADFROMFILE));
+        if (hIcon) {
+            SendMessage(hwnd, WM_SETICON, ICON_SMALL, reinterpret_cast<LPARAM>(hIcon));
+            SendMessage(hwnd, WM_SETICON, ICON_BIG, reinterpret_cast<LPARAM>(hIcon));
+
+            // Ajouter la fenêtre à la liste des fenêtres déjà modifiées
+            modifiedWindows.insert(windowName);
+        }
+    }
+}

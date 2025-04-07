@@ -43,8 +43,17 @@ int main() {
 
     auto previousTime = std::chrono::high_resolution_clock::now();
 
+    auto ratePreviousTime = std::chrono::high_resolution_clock::now();
+    int localSampleRate = 0;
+
     while (true) {
         auto frameStart = std::chrono::high_resolution_clock::now();
+
+        if (std::chrono::high_resolution_clock::now() - ratePreviousTime > std::chrono::seconds(1)) {
+            ratePreviousTime = std::chrono::high_resolution_clock::now();
+            localSampleRate = meaInfo.mea.sampleRate;
+            meaInfo.mea.sampleRate = 0;
+        }
 
         cv::Mat image = meaInfo.mea.plotGrid();
 
@@ -56,14 +65,25 @@ int main() {
             for (int i = 0; i < numberOfWindows; i++) {
                 std::string windowName = "Window " + std::to_string(i);
                 cv::imshow(windowName, selectedImage[i]);
+                setWindowIcon(windowName, logo_path);
             }
         }
-
         cv::imshow("Heatmap", heatmap);
+        setWindowIcon("Heatmap", logo_path);
 
-        ::drawLabel(image, "FPS: " + std::to_string(fps.getFPS()), Point(5, 10), {0, 255, 0}, 0.3, 1, false);
+        ::drawLabel(image, "FPS: " + std::to_string(fps.getFPS()), Point(4, 10), {0, 255, 0}, 0.3, 1, false);
+
+        if (mode == Mode::SERIAL) {
+            ::drawLabel(image, "Core0: " + std::to_string(meaInfo.mea.getCore0()) + "%", Point(4, 30), {0, 255, 0}, 0.3, 1, false);
+            ::drawLabel(image, "Core1: " + std::to_string(meaInfo.mea.getCore1()) + "%", Point(4, 40), {0, 255, 0}, 0.3, 1, false);
+        }
+
+        std::ostringstream stream;
+        stream << std::fixed << std::setprecision(1) << (static_cast<float>(localSampleRate) / 1000);
+        drawLabel(image, "" + stream.str() + "kS/s", Point(4, 20), {0, 255, 0}, 0.3, 1, false);
 
         cv::imshow("MEA", image);
+        setWindowIcon("MEA", logo_path);
 
         auto frameEnd = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> elapsed = frameEnd - frameStart;

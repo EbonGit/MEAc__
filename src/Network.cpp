@@ -52,6 +52,7 @@ void Network::generateNextPoint() {
             signals[i].push(signalProcessing(x));
         }
         lastSignal[i] = signals[i].peek();
+        sampleRate++;
     }
 
     if (saving) {
@@ -121,6 +122,7 @@ int Network::receive() {
         for (int i = 0; i < decoded_int_x; ++i) {
             for (int j = 0; j < decoded_int_y; ++j) {
                 signals[i].push((float)decoded_data[i][j]);
+                sampleRate++;
             }
             lastSignal[i] = signals[i].peek();
         }
@@ -173,49 +175,77 @@ void Network::launchSerial() {
     SerialReader serialReader(port, 115200);
 
     if (!serialReader.openPort()) {
-        std::cerr << "[ERROR] Impossible d'ouvrir le port serie !" << std::endl;
+        std::cerr << "[ERROR] Impossible d'ouvrir le port série !" << std::endl;
         return;
     }
 
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
-    float data[60];
-    serialReader.initialize();
+    SerialData data[60];
+    float lastValid[60];      // Dernière valeur correcte reçue
+    int inInterpolation[60] = {0};  // Nombre d'erreurs consécutives
 
     while (true) {
         int err = serialReader.read(data, 60);
+
         if (err == 0) {
-            std::cerr << "[ERROR] Probleme de lecture, tentative de reconnexion..." << std::endl;
+            std::cerr << "[ERROR] Problème de lecture, tentative de reconnexion..." << std::endl;
             serialReader.closePort();
             std::this_thread::sleep_for(std::chrono::seconds(10));
+
             if (!serialReader.openPort()) {
-                std::cerr << "[ERROR] Impossible de rouvrir le port serie. Arret du programme." << std::endl;
+                std::cerr << "[ERROR] Impossible de rouvrir le port série. Arrêt du programme." << std::endl;
                 break;
             }
-            serialReader.initialize();
         }
         else if (err == 1) {
             std::unique_lock<std::mutex> lock(signalsMutex);
             std::unique_lock<std::mutex> lock2(lastSignalMutex);
 
             for (int i = 0; i < 60; i++) {
-                signals[i].push(data[i]);
+                if (inInterpolation[i] > 0) {
+                    // Interpolation sur toute la séquence invalide
+                    float step = ((static_cast<float>(data[i]) * serialRatio) - lastValid[i]) / (inInterpolation[i] + 1);
+
+                    for (int j = 1; j <= inInterpolation[i]; j++) {
+                        float interpolatedValue = lastValid[i] + j * step;
+                        signals[i].push(interpolatedValue);
+                        sampleRate++;
+                    }
+
+                    inInterpolation[i] = 0; // Réinitialisation du compteur
+                }
+
+                // Ajout de la nouvelle valeur correcte
+                signals[i].push(static_cast<float>(data[i]) * serialRatio);
+                lastValid[i] = static_cast<float>(data[i]) * serialRatio; // Mise à jour de la dernière valeur valide
                 lastSignal[i] = signals[i].peek();
+                sampleRate++;
             }
 
-            int delta = numImages - 60;
-            for (int i = 0; i < delta; i++) {
-                signals[60 + i].push(0.0);
-                lastSignal[60 + i] = 0.0;
-            }
+            Core0 = serialReader.getCore0();
+            Core1 = serialReader.getCore1();
 
             lock.unlock();
             lock2.unlock();
         }
         else if (err == 2) {
-            continue;
+            std::cerr << "[WARNING] Séquence invalide détectée ! Interpolation en attente..." << std::endl;
+
+            std::unique_lock<std::mutex> lock(signalsMutex);
+            std::unique_lock<std::mutex> lock2(lastSignalMutex);
+
+            for (int i = 0; i < 60; i++) {
+                inInterpolation[i]++; // On incrémente le compteur d'erreurs consécutives
+                signals[i].push(lastValid[i]); // On stocke temporairement la dernière valeur valide
+                lastSignal[i] = lastValid[i];  // Mise à jour temporaire
+            }
+
+            lock.unlock();
+            lock2.unlock();
         }
     }
 
     serialReader.closePort();
 }
+

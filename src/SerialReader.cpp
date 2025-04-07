@@ -2,7 +2,6 @@
 #include <iostream>
 #include <chrono>
 #include <thread>
-#include <cmath>
 #include <cstring>
 
 SerialReader::SerialReader(const std::string& port, int baud_rate)
@@ -28,51 +27,20 @@ void SerialReader::closePort(bool verbose) {
     }
 }
 
-bool SerialReader::initialize() {
-    const uint8_t ackSignal[3] = {0xAA, 0xBB, 0xCC};
-
-    // Envoi du premier ACK
-    serial_.writeBytes(ackSignal, 3);
-    serial_.flushReceiver();
-    std::cout << "[INFO] Premier ACK envoye, ESP32 peut commencer." << std::endl;
-
-    return true;
-}
-
-
-int SerialReader::read(float* data, size_t N) {
+template <typename T>
+int SerialReader::read(T* data, size_t N) {
     const uint8_t startSequence[3] = {0xFF, 0xAA, 0x55};
     const uint8_t endSequence[3] = {0xEE, 0xBB, 0x66};
-    const uint8_t resetSignal[3] = {0xCC, 0xDD, 0xEE};
-    const uint8_t ackSignal[3] = {0xAA, 0xBB, 0xCC};
 
     uint8_t receivedBytes[3] = {0};
-
-    // Attente de la séquence de départ ou du signal de reset
     size_t matchedBytes = 0;
     while (matchedBytes < 3) {
         if (serial_.readChar(reinterpret_cast<char*>(&receivedBytes[matchedBytes]), 1000) == 1) {
             if (receivedBytes[matchedBytes] == startSequence[matchedBytes]) {
                 matchedBytes++;
-            } else if (receivedBytes[matchedBytes] == resetSignal[matchedBytes]) {
-                matchedBytes++;
-                if (matchedBytes == 3) {
-                    std::cout << "[INFO] Recu signal de reset. Fermeture et reouverture de la connexion." << std::endl;
-
-                    closePort(false);
-                    std::this_thread::sleep_for(std::chrono::milliseconds(10));
-                    if (!openPort(false)) {
-                        std::cerr << "[ERROR] Impossible de rouvrir le port serie !" << std::endl;
-                        return 0;
-                    }
-
-                    serial_.flushReceiver();
-                    serial_.writeBytes(ackSignal, 3);
-                    return 2;    // Réinitialisation réussie
-                }
             } else {
-                //std::cout << "[ERROR] " << receivedBytes[matchedBytes] << " != " << startSequence[matchedBytes] << std::endl;
-                matchedBytes = 0; // Reset si erreur
+                //std::cout << "[INFO] Wait: " << receivedBytes[matchedBytes] << std::endl;
+                matchedBytes = 0;
             }
         } else {
             std::cerr << "[ERROR] Timeout en attente de la sequence de depart !" << std::endl;
@@ -80,10 +48,9 @@ int SerialReader::read(float* data, size_t N) {
         }
     }
 
-        // Lecture des données
     size_t bytesRead = 0;
-    while (bytesRead < N * sizeof(float)) {
-        int chunk = serial_.readBytes(reinterpret_cast<char*>(data) + bytesRead, (N * sizeof(float)) - bytesRead, 1000);
+    while (bytesRead < N * sizeof(T)) {
+        int chunk = serial_.readBytes(reinterpret_cast<char*>(data) + bytesRead, (N * sizeof(T)) - bytesRead, 1000);
         if (chunk > 0) {
             bytesRead += chunk;
         } else {
@@ -92,16 +59,40 @@ int SerialReader::read(float* data, size_t N) {
         }
     }
 
-    // Vérification de la séquence de fin
     if (serial_.readBytes(reinterpret_cast<char*>(receivedBytes), 3, 1000) != 3) {
         std::cerr << "[ERROR] Timeout ou erreur lors de la lecture de la sequence de fin !" << std::endl;
         return 0;
     }
 
     if (memcmp(receivedBytes, endSequence, 3) != 0) {
-        std::cerr << "[ERROR] Sequence de fin invalide !" << std::endl;
+        return 2;
+    }
+
+    uint8_t receivedQsize = 0;
+    if (serial_.readBytes(reinterpret_cast<char*>(&receivedQsize), 1, 1000) != 1) {
+        std::cerr << "[ERROR] Timeout ou erreur lors de la lecture de la taille de la file !" << std::endl;
         return 0;
     }
 
+    uint8_t receivedCPU0 = 0;
+    if (serial_.readBytes(reinterpret_cast<char*>(&receivedCPU0), 1, 1000) != 1) {
+        std::cerr << "[ERROR] Timeout ou erreur lors de la lecture de la charge CPU !" << std::endl;
+        return 0;
+    }
+
+    Core0 = 100 - static_cast<int>(receivedCPU0);
+
+    uint8_t receivedCPU1 = 0;
+    if (serial_.readBytes(reinterpret_cast<char*>(&receivedCPU1), 1, 1000) != 1) {
+        std::cerr << "[ERROR] Timeout ou erreur lors de la lecture de la charge CPU !" << std::endl;
+        return 0;
+    }
+
+    Core1 = 100 - static_cast<int>(receivedCPU1);
+
     return 1;
 }
+
+template int SerialReader::read<float>(float*, size_t);
+template int SerialReader::read<uint32_t>(uint32_t*, size_t);
+

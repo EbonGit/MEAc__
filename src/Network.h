@@ -14,6 +14,9 @@ private:
 
     float signalProcessing(float x);
 
+    int Core0;
+    int Core1;
+
 public:
     Network(SignalType signalType);
     void generateNextPoint();
@@ -25,6 +28,10 @@ public:
 
     int receive();
 
+    int getCore0(){ return Core0; }
+    int getCore1(){ return Core1;}
+
+    int sampleRate = 0;
 };
 
 double convertBigEndianToDouble(const char* buffer);

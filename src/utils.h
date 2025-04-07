@@ -1,10 +1,13 @@
 #ifndef MEAC___UTILS_H
 #define MEAC___UTILS_H
 
+#include <winsock2.h>
+#include <Windows.h>
 #include <opencv2/opencv.hpp>
 #include <vector>
 #include <cstdlib>
 #include <string>
+#include <unordered_set>
 #include "config.h"
 #include "StackSignal.h"
 
@@ -90,5 +93,7 @@ T getIthElement(const std::set<T>& mySet, size_t index) {
     std::advance(it, index); // Move the iterator to the i-th position
     return *it;
 }
+
+void setWindowIcon(const std::string& windowName, const std::string& iconPath);
 
 #endif //MEAC___UTILS_H`
